@@ -1,0 +1,27 @@
+{
+  "id": "H9",
+  "title": "Within-company response to national growth",
+  "statement": "Companies earn higher ROA in years when national GDP growth is higher.",
+  "expected_sign": 1,
+  "effect": -0.03829490410687661,
+  "ci_low": -0.1540262416468672,
+  "ci_high": 0.07743643343311399,
+  "effect_unit": "pp ROA per +1 pp GDP growth (within company)",
+  "p_primary": 0.569,
+  "p_method": "wild cluster bootstrap",
+  "n": 7689,
+  "clusters": 34,
+  "robust_share": 0.2857142857142857,
+  "replication_coef": 0.21557730333855502,
+  "replication_p": 0.0315,
+  "replication_same_sign": true,
+  "verdict": "not supported",
+  "notebook": "1.9_within_country_changes.ipynb",
+  "notes": [
+    "Primary: +1 pp national GDP growth \u2192 -0.038 pp of the company's own ROA (95% CI -0.154 to +0.077), wild p = 0.569, 34 countries, 7,689 company-years.",
+    "Robustness: predicted sign in 29% of seven samples. ESEF replication: +0.216 pp (wild p = 0.032), same direction.",
+    "Slow variables (development, institutions) are almost fixed within a country (1% and 0% of variance within), so they cannot be tested this way.",
+    "Country-level change in GDP growth vs change in median ROA: \u03c1 = -0.16 (n = 33).",
+    "VERDICT H9: NOT SUPPORTED"
+  ]
+}

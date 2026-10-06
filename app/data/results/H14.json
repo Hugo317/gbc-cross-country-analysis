@@ -1,0 +1,27 @@
+{
+  "id": "H14",
+  "title": "Convergence of company profitability",
+  "statement": "The development\u2013ROA gap narrows over time.",
+  "expected_sign": 1,
+  "effect": -0.05412351349280886,
+  "ci_low": -0.18723566195934097,
+  "ci_high": 0.07898863497372324,
+  "effect_unit": "pp ROA per +1 SD development per year (development \u00d7 time)",
+  "p_primary": 0.4715,
+  "p_method": "wild cluster bootstrap",
+  "n": 10129,
+  "clusters": 34,
+  "robust_share": 0.0,
+  "replication_coef": 0.05950946703942539,
+  "replication_p": 0.8935,
+  "replication_same_sign": true,
+  "verdict": "not supported",
+  "notebook": "1.14_convergence.ipynb",
+  "notes": [
+    "Primary: the development slope changes by -0.05 pp per +1 SD per year (from -1.00 in 2022 to -1.22 in 2025), wild p = 0.471, 34 countries, 10,129 company-years.",
+    "Robustness: predicted sign in 0% of seven samples. ESEF 2018\u20132025: +0.06 pp per year (wild p = 0.893), same direction.",
+    "\u03c3-convergence: SD of country median ROA 1.36 in 2022 vs 1.29 in 2025.",
+    "\u03b2-convergence of GDP per person 2012\u20132024: slope -1.01 (\u03c1 = -0.32, permutation p = 0.075, n = 34); EU only \u03c1 = -0.68 (p = 0.002).",
+    "VERDICT H14: NOT SUPPORTED"
+  ]
+}

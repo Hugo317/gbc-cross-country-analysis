@@ -1,0 +1,27 @@
+{
+  "id": "H2",
+  "title": "Growth and catch-up",
+  "statement": "Firms in lower-income countries grow real revenue faster.",
+  "expected_sign": -1,
+  "effect": -1.4089765723742458,
+  "ci_low": -3.074646595376273,
+  "ci_high": 0.2566934506277816,
+  "effect_unit": "pp real revenue growth per +1 SD development",
+  "p_primary": 0.145,
+  "p_method": "wild cluster bootstrap",
+  "n": 5039,
+  "clusters": 34,
+  "robust_share": 1.0,
+  "replication_coef": -2.903285593786868,
+  "replication_p": 0.2195,
+  "replication_same_sign": true,
+  "verdict": "not supported",
+  "notebook": "1.2_growth_and_catch_up.ipynb",
+  "notes": [
+    "Primary: +1 SD development \u2192 -1.41 pp real revenue growth (typical 1.8%), wild p = 0.145, 34 countries, 5,039 company-years.",
+    "Robustness: expected sign in 100% of seven samples. ESEF replication: -2.90 pp (wild p = 0.220), same direction.",
+    "Controlling for national GDP growth the coefficient is -0.31 (p = 0.639).",
+    "Profit vs growth at country level: \u03c1 = +0.14 (n = 34).",
+    "VERDICT H2: NOT SUPPORTED"
+  ]
+}

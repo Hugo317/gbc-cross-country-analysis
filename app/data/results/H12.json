@@ -1,0 +1,26 @@
+{
+  "id": "H12",
+  "title": "Financing: equity ratio and development",
+  "statement": "Non-financial firms in more developed countries have a lower equity ratio.",
+  "expected_sign": -1,
+  "effect": -0.2899504430865605,
+  "ci_low": -1.7205695552253943,
+  "ci_high": 1.1406686690522734,
+  "effect_unit": "pp equity ratio per +1 SD development",
+  "p_primary": 0.702,
+  "p_method": "wild cluster bootstrap",
+  "n": 9051,
+  "clusters": 34,
+  "robust_share": 1.0,
+  "replication_coef": 0.6932318025514803,
+  "replication_p": 0.838,
+  "replication_same_sign": false,
+  "verdict": "not supported",
+  "notebook": "1.12_balance_sheets_and_financing.ipynb",
+  "notes": [
+    "Primary: +1 SD development \u2192 -0.29 pp equity ratio (typical 44%), wild p = 0.702, 34 countries, 9,051 company-years.",
+    "Robustness: predicted sign in 100% of seven samples. ESEF replication: +0.69 pp (wild p = 0.838), opposite direction.",
+    "Outcomes with q < 0.10 among the six: net margin (pp) (-3.64), operating margin (pp) (-3.55), return on equity (pp) (-2.41), loss-making firm-years (%) (+3.40).",
+    "VERDICT H12: NOT SUPPORTED"
+  ]
+}

@@ -6,3 +6,4 @@ data/profile/
 *.duckdb
 .env
 .DS_Store
+.playwright-mcp/

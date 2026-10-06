@@ -1,0 +1,27 @@
+{
+  "id": "H16",
+  "title": "New indicators: energy, climate, tax, banking, currency",
+  "statement": "At least one new country indicator is related to company ROA beyond development.",
+  "expected_sign": 0,
+  "effect": -0.3998472116119175,
+  "ci_low": null,
+  "ci_high": null,
+  "effect_unit": "Spearman \u03c1, broadband per 100 people vs country median ROA (strongest of 12)",
+  "p_primary": 0.17721775911186227,
+  "p_method": "Spearman p, BH-corrected over the new indicators",
+  "n": 34,
+  "clusters": 34,
+  "robust_share": 1.0,
+  "replication_coef": -0.18382352941176472,
+  "replication_p": 0.4800344013399135,
+  "replication_same_sign": true,
+  "verdict": "not supported",
+  "notebook": "1.16_new_country_indicators.ipynb",
+  "notes": [
+    "Primary: strongest of 12 new indicators is 'broadband per 100 people': \u03c1 = -0.40 with median ROA (raw p = 0.0191, BH q = 0.177, n = 34 countries); 0 indicators pass q < 0.10.",
+    "Given the development index the partial \u03c1 is -0.26; firm-level coefficient -0.97 pp per SD (wild p = 0.007), -0.36 pp with development controlled (p = 0.191).",
+    "Robustness: same sign in 100% of seven samples. ESEF (EU only) \u03c1 = -0.18 (p = 0.480), same direction.",
+    "Prediction (leave-one-country-out MAE): constant 0.91, development 0.91, new indicators 1.10, both 1.12 pp.",
+    "VERDICT H16: NOT SUPPORTED"
+  ]
+}

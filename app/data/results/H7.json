@@ -1,0 +1,28 @@
+{
+  "id": "H7",
+  "title": "Out-of-country prediction",
+  "statement": "Country features improve ROA predictions for countries the model has not seen.",
+  "expected_sign": 1,
+  "effect": -0.3801504199559518,
+  "ci_low": -0.6086556208538425,
+  "ci_high": -0.18698496434063713,
+  "effect_unit": "MAE gain in pp ROA (baseline \u2212 full), leave-one-country-out",
+  "p_primary": 1.0,
+  "p_method": "bootstrap over countries (gain \u2264 0)",
+  "n": 10220,
+  "clusters": 34,
+  "robust_share": 0.4,
+  "replication_coef": -1.2146608392386646,
+  "replication_p": 1.0,
+  "replication_same_sign": false,
+  "verdict": "not supported",
+  "notebook": "1.7_out_of_country_prediction.ipynb",
+  "notes": [
+    "Primary: adding the 35 country features changes out-of-country MAE by -0.380 pp ROA (95% CI -0.609 to -0.187); better in 9 of 34 countries; p (gain \u2264 0) = 1.000.",
+    "Context: baseline MAE 5.47 pp vs a typical ROA of 3.8 pp; out-of-country R\u00b2 0.012 (baseline) vs -0.036 (full).",
+    "Robustness: 40% of 5 alternative models have a positive gain. For comparison, an ordinary random split (not a valid test for new countries) gives a gain of +0.006 pp.",
+    "Note: the sector median (MAE 5.28 pp) beats the Ridge baseline (5.45 pp) on MAE, because Ridge minimises squared error and ROA has fat tails; the comparison that matters here is full vs baseline, with the same loss.",
+    "ESEF replication: gain -1.215 pp (p = 1.000).",
+    "VERDICT H7: NOT SUPPORTED"
+  ]
+}
