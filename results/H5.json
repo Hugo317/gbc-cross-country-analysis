@@ -1,0 +1,28 @@
+{
+  "id": "H5",
+  "title": "Business environment",
+  "statement": "Deeper credit systems go with deeper stock markets.",
+  "expected_sign": 1,
+  "effect": 0.7684210526315788,
+  "ci_low": 0.46307254914405394,
+  "ci_high": 0.9286027568922303,
+  "effect_unit": "Spearman \u03c1, private credit vs stock-market value (% GDP)",
+  "p_primary": 7.571881175260256e-05,
+  "p_method": "Spearman test (analytic)",
+  "n": 20,
+  "clusters": 20,
+  "robust_share": 1.0,
+  "replication_coef": -0.3090909090909091,
+  "replication_p": 0.1727682726419469,
+  "replication_same_sign": false,
+  "verdict": "supported",
+  "secondary_effect": 0.27439839572192515,
+  "secondary_p": 0.12226103427886405,
+  "notebook": "1.5_business_environment.ipynb",
+  "notes": [
+    "Primary: credit vs stock-market value \u03c1 = +0.77 (95% CI +0.46 to +0.93), p = 0.0001, n = 20 countries; partial \u03c1 given GDP per person +0.85.",
+    "Robustness: positive in 100% of 27 variants (leave-one-out range +0.74 to +0.85).",
+    "Secondary: institutions \u2192 new business density \u03c1 = +0.27 (p = 0.122, n = 33); EU replication with business birth rate \u03c1 = -0.31 (p = 0.173, n = 21).",
+    "VERDICT H5: SUPPORTED"
+  ]
+}

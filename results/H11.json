@@ -1,0 +1,27 @@
+{
+  "id": "H11",
+  "title": "Sensitivity of the development\u2013ROA link",
+  "statement": "The H0 link survives dropping any single country and alternative definitions.",
+  "expected_sign": -1,
+  "effect": -0.9280444955270094,
+  "ci_low": -1.2762701120659141,
+  "ci_high": -0.5798188789881048,
+  "effect_unit": "pp ROA per +1 SD development, weakest leave-one-country-out run",
+  "p_primary": 0.002,
+  "p_method": "wild cluster bootstrap (worst case of 34 runs)",
+  "n": 9828,
+  "clusters": 33,
+  "robust_share": 1.0,
+  "replication_coef": -1.0822117695901978,
+  "replication_p": 0.038,
+  "replication_same_sign": true,
+  "verdict": "supported",
+  "notebook": "1.11_sensitivity_of_the_main_finding.ipynb",
+  "notes": [
+    "Full sample (H0): -1.12 pp. Weakest leave-one-country-out result: dropping India gives -0.93 pp (95% CI -1.28 to -0.58), wild p = 0.002.",
+    "Leave-one-out: negative in 34 of 34 runs; p < 0.10 in 34, p < 0.05 in 34. Dropping the 5 most influential countries: -0.61 pp (p = 0.010).",
+    "Other definitions: negative and p < 0.10 in 9 of 9. Countries counted equally: \u03c1 = -0.35 (permutation p = 0.041); placebo permutation p = 0.001.",
+    "Share of all runs with negative coefficient and p < 0.10: 100%. ESEF leave-one-out: negative in 19 of 19 runs (weakest -1.08, p = 0.038).",
+    "VERDICT H11: SUPPORTED"
+  ]
+}

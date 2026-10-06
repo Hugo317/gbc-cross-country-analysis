@@ -1,0 +1,28 @@
+{
+  "id": "H3",
+  "title": "Mechanism of the development\u2013ROA link",
+  "statement": "Sector mix, size and leverage explain most of the negative link between development and ROA.",
+  "expected_sign": 1,
+  "effect": -0.0023169923435979456,
+  "ci_low": -0.36470788742374377,
+  "ci_high": 0.1983117403704096,
+  "effect_unit": "share of the development\u2013ROA link explained",
+  "p_primary": 0.5,
+  "p_method": "country bootstrap (share \u2264 0)",
+  "n": 10057,
+  "clusters": 34,
+  "robust_share": 0.0,
+  "replication_coef": -0.12745028413031112,
+  "replication_p": 0.021,
+  "replication_same_sign": false,
+  "verdict": "not supported",
+  "notebook": "1.3_mechanism_of_the_roa_link.ipynb",
+  "notes": [
+    "Starting link: +1 SD development \u2192 -1.12 pp ROA (wild p = 0.001).",
+    "Sector + size + leverage remove 0% of it (95% interval -36% to 20%, bootstrap p = 0.500). Sector alone: 0%; adding size: -1%; adding leverage: 0%.",
+    "Channels (with controls): margin -3.01 pp (p = 0.000), asset turnover -0.01 (p = 0.628), equity ratio -0.000 (p = 0.990).",
+    "Within sectors the link is negative in 10 of 11 sectors. ESEF: share removed by size + leverage -13%.",
+    "What the data point to instead: the link works through thinner NET MARGINS within sectors, not through asset use or leverage.",
+    "VERDICT H3: NOT SUPPORTED"
+  ]
+}

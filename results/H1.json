@@ -1,0 +1,27 @@
+{
+  "id": "H1",
+  "title": "Risk and stability",
+  "statement": "Where institutions are stronger, fewer listed companies make a loss.",
+  "expected_sign": -1,
+  "effect": 3.1141462827270776,
+  "ci_low": 1.2188667916861853,
+  "ci_high": 5.00942577376797,
+  "effect_unit": "pp loss probability per +1 SD institutions",
+  "p_primary": 0.0135,
+  "p_method": "wild cluster bootstrap",
+  "n": 10220,
+  "clusters": 34,
+  "robust_share": 0.0,
+  "replication_coef": 4.848026536935633,
+  "replication_p": 0.0135,
+  "replication_same_sign": false,
+  "verdict": "contradicted",
+  "explained_away": true,
+  "notebook": "1.1_risk_and_stability.ipynb",
+  "notes": [
+    "Primary: +1 SD institutions \u2192 +3.11 pp probability of a loss (base rate 14.6%), wild p = 0.013, 34 countries.",
+    "Robustness: expected sign in 0% of seven samples. Replication on ESEF: +4.85 pp (wild p = 0.013), opposite direction.",
+    "Beyond openness and size: institutions coefficient +0.12 (p = 0.93) at country level when trade openness and population are controlled.",
+    "VERDICT H1: CONTRADICTED (the association is explained away by trade openness and population)"
+  ]
+}

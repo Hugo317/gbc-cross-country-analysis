@@ -1,0 +1,27 @@
+{
+  "id": "H10",
+  "title": "Shocks: COVID crash and institutions",
+  "statement": "Companies in countries with stronger institutions fell less in the early-2020 crash.",
+  "expected_sign": 1,
+  "effect": 0.022658766578619316,
+  "ci_low": -2.557166304739434,
+  "ci_high": 2.6024838378966733,
+  "effect_unit": "pp crash return per +1 SD institutions (Jan\u2013Mar 2020)",
+  "p_primary": 0.988,
+  "p_method": "wild cluster bootstrap",
+  "n": 2227,
+  "clusters": 34,
+  "robust_share": 0.75,
+  "replication_coef": 0.9606690628428389,
+  "replication_p": 0.1915,
+  "replication_same_sign": true,
+  "verdict": "not supported",
+  "notebook": "1.10_shocks_covid_and_energy.ipynb",
+  "notes": [
+    "Primary: +1 SD institutions \u2192 +0.02 pp return in the Jan\u2013Mar 2020 crash (typical -21.8%), wild p = 0.988, 34 countries, 2,227 companies.",
+    "Robustness: predicted sign in 75% of variants. ESEF accounts (change in ROA 2019\u21922020): +0.96 pp (wild p = 0.192), same direction.",
+    "Country scan: strongest feature for the crash is youth_unemployment (\u03c1 = -0.50, q = 0.07); 3 of 35 features have q < 0.10.",
+    "Recovery (Mar\u2192Dec 2020): -1.2 pp (wild p = 0.710); 2022 real return vs energy intensity: +0.2 pp (wild p = 0.870).",
+    "VERDICT H10: NOT SUPPORTED"
+  ]
+}

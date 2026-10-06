@@ -1,0 +1,45 @@
+WB   NY.GDP.MKTP.CD         countries=35 filled=100.0% last=2024
+WB   NY.GDP.PCAP.PP.KD      countries=35 filled=100.0% last=2024
+WB   NY.GDP.MKTP.KD.ZG      countries=35 filled=100.0% last=2024
+WB   FP.CPI.TOTL.ZG         countries=35 filled=100.0% last=2024
+WB   NV.IND.MANF.ZS         countries=35 filled= 98.9% last=2024
+WB   NV.SRV.TOTL.ZS         countries=35 filled= 98.9% last=2024
+WB   NE.TRD.GNFS.ZS         countries=35 filled=100.0% last=2024
+WB   BX.KLT.DINV.WD.GD.ZS   countries=35 filled=100.0% last=2024
+WB   TX.VAL.TECH.MF.ZS      countries=35 filled=100.0% last=2024
+WB   FS.AST.PRVT.GD.ZS      countries=34 filled= 96.0% last=2024
+WB   FR.INR.LEND            countries=19 filled= 42.2% last=2024
+WB   CM.MKT.LCAP.GD.ZS      countries=29 filled= 71.6% last=2024
+WB   CM.MKT.LDOM.NO         countries=29 filled= 72.3% last=2024
+WB   IC.BUS.NDNS.ZS         countries=34 filled= 93.2% last=2024
+WB   GC.TAX.TOTL.GD.ZS      countries=33 filled= 92.5% last=2024
+WB   SL.UEM.TOTL.ZS         countries=35 filled=100.0% last=2024
+WB   SL.UEM.1524.ZS         countries=35 filled=100.0% last=2024
+WB   SL.TLF.CACT.ZS         countries=35 filled=100.0% last=2024
+WB   SL.EMP.SELF.ZS         countries=35 filled=100.0% last=2024
+WB   SP.POP.TOTL            countries=35 filled=100.0% last=2024
+WB   SP.POP.1564.TO.ZS      countries=35 filled=100.0% last=2024
+WB   SP.POP.65UP.TO.ZS      countries=35 filled=100.0% last=2024
+WB   SP.URB.TOTL.IN.ZS      countries=35 filled=100.0% last=2024
+WB   SP.DYN.LE00.IN         countries=35 filled=100.0% last=2024
+WB   SI.POV.GINI            countries=34 filled= 77.6% last=2024
+WB   SE.TER.ENRR            countries=35 filled= 91.9% last=2024
+WB   SE.XPD.TOTL.GD.ZS      countries=35 filled= 75.4% last=2024
+WB   GB.XPD.RSDV.GD.ZS      countries=35 filled= 88.6% last=2024
+WB   IP.PAT.RESD            countries=35 filled= 75.6% last=2021
+WB   IT.NET.USER.ZS         countries=35 filled=100.0% last=2024
+WB   IT.CEL.SETS.P2         countries=35 filled= 99.3% last=2024
+WGI  GOV_WGI_GE.EST         countries=35 filled=100.0% last=2024
+WGI  GOV_WGI_RQ.EST         countries=35 filled=100.0% last=2024
+WGI  GOV_WGI_RL.EST         countries=35 filled=100.0% last=2024
+WGI  GOV_WGI_CC.EST         countries=35 filled=100.0% last=2024
+WGI  GOV_WGI_VA.EST         countries=35 filled=100.0% last=2024
+WGI  GOV_WGI_PV.EST         countries=35 filled=100.0% last=2024
+IMF  NGDP_RPCH              countries=35 filled=100.0% last=2024
+IMF  PCPIPCH                countries=35 filled=100.0% last=2024
+IMF  LUR                    countries=35 filled= 97.6% last=2024
+IMF  GGXWDG_NGDP            countries=35 filled=100.0% last=2024
+IMF  BCA_NGDPD              countries=35 filled=100.0% last=2024
+IMF  NGDPDPC                countries=35 filled=100.0% last=2024
+
+Wrote /Users/hugo/Projects/name_to_decide/data/profile/probe.csv

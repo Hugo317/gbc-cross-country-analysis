@@ -1,0 +1,27 @@
+{
+  "id": "H4",
+  "title": "Sector \u00d7 country type",
+  "statement": "The ROA differences between sectors depend on the type of country.",
+  "expected_sign": 0,
+  "effect": 0.014481782244931352,
+  "ci_low": null,
+  "ci_high": null,
+  "effect_unit": "extra adjusted R\u00b2 from sector \u00d7 type interactions",
+  "p_primary": 0.2075,
+  "p_method": "permutation of type labels across countries",
+  "n": 10209,
+  "clusters": 34,
+  "robust_share": 0.0,
+  "replication_coef": null,
+  "replication_p": null,
+  "replication_same_sign": null,
+  "verdict": "not supported",
+  "notebook": "1.4_sector_by_country_type.ipynb",
+  "notes": [
+    "Primary: sector \u00d7 type interaction F = 6.20, extra adjusted R\u00b2 = +0.0145, permutation p = 0.2075 (4 types, 34 countries).",
+    "Robustness: significant in 0% of 6 variants.",
+    "Largest departures (pp ROA, vs sector and type averages): Energy / type 1 -2.1, Consumer Defensive / type 4 +1.9.",
+    "Not replicable on ESEF (no sector field).",
+    "VERDICT H4: NOT SUPPORTED"
+  ]
+}

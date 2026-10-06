@@ -1,0 +1,14 @@
+nasa_10_ki       rows=  1376 countries=22 periods=2012..2025
+nama_10_pc       rows=   616 countries=22 periods=2012..2025
+une_rt_a         rows=   615 countries=22 periods=2012..2025
+prc_hicp_aind    rows=   308 countries=22 periods=2012..2025
+lc_lci_lev       rows=   175 countries=22 periods=2012..2025
+earn_mw_cur      rows=  1008 countries=17 periods=2012-S1..2026-S2
+rd_e_gerdtot     rows=   572 countries=22 periods=2012..2024
+isoc_ci_ifp_iu   rows=   307 countries=22 periods=2012..2025
+isoc_eb_ai       rows=    88 countries=22 periods=2021..2025
+sbs_na_sca_r2    rows=  1186 countries=22 periods=2012..2020
+sbs_sc_ovw       rows=   528 countries=22 periods=2021..2024
+bd_size          rows=   498 countries=22 periods=2015..2024
+
+Wrote /Users/hugo/Projects/name_to_decide/data/flat/eurostat_long.parquet: 7277 rows

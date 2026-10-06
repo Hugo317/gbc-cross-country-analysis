@@ -1,0 +1,53 @@
+# Codes verified by probe.py (2026-10-05). Dropped: IC.TAX.TOTL.CP.ZS, IC.LGL.CRED.XQ (deleted from WB API).
+# Run `uv run python src/fetch/probe.py` to see which return data for the 40 countries.
+# source: WB (WDI, source 2) | WGI (source 3) | IMF (DataMapper)
+# snapshot_only: series is sparse or discontinued; use as "latest available" only.
+
+WB:
+  - {code: NY.GDP.MKTP.CD,        theme: economy}
+  - {code: NY.GDP.PCAP.PP.KD,     theme: economy}
+  - {code: NY.GDP.MKTP.KD.ZG,     theme: economy}
+  - {code: FP.CPI.TOTL.ZG,        theme: economy}
+  - {code: NV.IND.MANF.ZS,        theme: economy}
+  - {code: NV.SRV.TOTL.ZS,        theme: economy}
+  - {code: NE.TRD.GNFS.ZS,        theme: trade}
+  - {code: BX.KLT.DINV.WD.GD.ZS,  theme: trade}
+  - {code: TX.VAL.TECH.MF.ZS,     theme: trade}
+  - {code: FS.AST.PRVT.GD.ZS,     theme: finance}
+  - {code: FR.INR.LEND,           theme: finance}
+  - {code: CM.MKT.LCAP.GD.ZS,     theme: finance}
+  - {code: CM.MKT.LDOM.NO,        theme: finance}
+  - {code: IC.BUS.NDNS.ZS,        theme: business}
+  - {code: GC.TAX.TOTL.GD.ZS,     theme: fiscal}
+  - {code: SL.UEM.TOTL.ZS,        theme: labour}
+  - {code: SL.UEM.1524.ZS,        theme: labour}
+  - {code: SL.TLF.CACT.ZS,        theme: labour}
+  - {code: SL.EMP.SELF.ZS,        theme: labour}
+  - {code: SP.POP.TOTL,           theme: social}
+  - {code: SP.POP.1564.TO.ZS,     theme: social}
+  - {code: SP.POP.65UP.TO.ZS,     theme: social}
+  - {code: SP.URB.TOTL.IN.ZS,     theme: social}
+  - {code: SP.DYN.LE00.IN,        theme: social}
+  - {code: SI.POV.GINI,           theme: social, snapshot_only: true}
+  - {code: SE.TER.ENRR,           theme: education}
+  - {code: SE.XPD.TOTL.GD.ZS,     theme: education}
+  - {code: GB.XPD.RSDV.GD.ZS,     theme: innovation}
+  - {code: IP.PAT.RESD,           theme: innovation}
+  - {code: IT.NET.USER.ZS,        theme: infrastructure}
+  - {code: IT.CEL.SETS.P2,        theme: infrastructure}
+
+WGI:
+  - {code: GOV_WGI_GE.EST, theme: governance}
+  - {code: GOV_WGI_RQ.EST, theme: governance}
+  - {code: GOV_WGI_RL.EST, theme: governance}
+  - {code: GOV_WGI_CC.EST, theme: governance}
+  - {code: GOV_WGI_VA.EST, theme: governance}
+  - {code: GOV_WGI_PV.EST, theme: governance}
+
+IMF:
+  - {code: NGDP_RPCH,    theme: economy}
+  - {code: PCPIPCH,      theme: economy}
+  - {code: LUR,          theme: labour}
+  - {code: GGXWDG_NGDP,  theme: fiscal}
+  - {code: BCA_NGDPD,    theme: economy}
+  - {code: NGDPDPC,      theme: economy}

@@ -1,0 +1,25 @@
+{
+  "id": "H0",
+  "title": "Country conditions and firm performance",
+  "statement": "Company ROA is related to the social and economic conditions of the country.",
+  "expected_sign": 0,
+  "effect": -1.123573283980209,
+  "ci_low": -1.5994932936328934,
+  "ci_high": -0.6476532743275247,
+  "effect_unit": "pp ROA per +1 SD development index",
+  "p_primary": 0.001,
+  "p_method": "wild cluster bootstrap",
+  "n": 10220,
+  "clusters": 34,
+  "robust_share": 1.0,
+  "replication_coef": -1.286367137270605,
+  "replication_p": 0.023,
+  "replication_same_sign": true,
+  "verdict": "supported",
+  "notebook": "03_analysis.ipynb",
+  "notes": [
+    "Primary: +1 SD development \u2192 -1.12 pp ROA (95% CI -1.60 to -0.65), wild p = 0.001, 34 countries.",
+    "Robustness: same sign in 100% of seven samples. ESEF replication: -1.29 pp (wild p = 0.023).",
+    "VERDICT H0: SUPPORTED (association present, direction negative; effect small relative to firm and sector differences)"
+  ]
+}

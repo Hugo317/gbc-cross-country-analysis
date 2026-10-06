@@ -1,0 +1,110 @@
+screener AUT: 788 candidates
+screener BEL: 110 candidates
+screener CZE: 50 candidates
+screener DNK: 109 candidates
+screener EST: 19 candidates
+screener FIN: 119 candidates
+screener FRA: 378 candidates
+screener DEU: 1100 candidates
+screener GRC: 143 candidates
+screener HUN: 29 candidates
+screener IRL: 18 candidates
+screener ITA: 786 candidates
+screener LVA: 11 candidates
+screener LTU: 22 candidates
+screener LUX: 0 candidates
+screener NLD: 107 candidates
+screener POL: 377 candidates
+screener PRT: 34 candidates
+screener ROU: 128 candidates
+screener ESP: 185 candidates
+screener SWE: 147 candidates
+screener USA: 1100 candidates
+screener CAN: 1008 candidates
+screener MEX: 612 candidates
+screener BRA: 293 candidates
+screener CHL: 99 candidates
+screener JPN: 165 candidates
+screener KOR: 165 candidates
+screener CHN: 165 candidates
+screener IND: 165 candidates
+screener SGP: 164 candidates
+screener IDN: 163 candidates
+screener AUS: 165 candidates
+screener ZAF: 130 candidates
+AUT: 800 candidates, 36 valid
+BEL: 112 candidates, 103 valid
+CZE: 51 candidates, 22 valid
+DNK: 112 candidates, 104 valid
+EST: 23 candidates, 19 valid
+FIN: 123 candidates, 113 valid
+FRA: 380 candidates, 343 valid
+DEU: 1124 candidates, 79 valid
+GRC: 146 candidates, 130 valid
+HUN: 35 candidates, 21 valid
+HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: MCON.IR"}}}
+HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: ITRM"}}}
+HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: AIBRY"}}}
+HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: IRBT"}}}
+IRL: 67 candidates, 43 valid
+ITA: 788 candidates, 161 valid
+LVA: 11 candidates, 10 valid
+LTU: 22 candidates, 22 valid
+LUX: 11 candidates, 10 valid
+NLD: 107 candidates, 81 valid
+POL: 378 candidates, 305 valid
+PRT: 34 candidates, 32 valid
+ROU: 128 candidates, 124 valid
+ESP: 185 candidates, 160 valid
+SWE: 156 candidates, 137 valid
+USA: 1100 candidates, 392 valid
+CAN: 1009 candidates, 745 valid
+MEX: 614 candidates, 109 valid
+BRA: 300 candidates, 293 valid
+CHL: 99 candidates, 92 valid
+JPN: 168 candidates, 167 valid
+KOR: 168 candidates, 162 valid
+CHN: 172 candidates, 169 valid
+IND: 168 candidates, 168 valid
+SGP: 166 candidates, 119 valid
+IDN: 166 candidates, 165 valid
+AUS: 172 candidates, 139 valid
+ZAF: 130 candidates, 105 valid
+
+Per country (valid candidates -> seeded):
+      valid  seeded  sectors
+iso3                        
+AUS     139     100       11
+AUT      36      36       10
+BEL     103     100       11
+BRA     293     100       11
+CAN     745     100       11
+CHL      92      92       11
+CHN     169     100       11
+CZE      22      22        8
+DEU      79      79       11
+DNK     104     100       11
+ESP     160     100       11
+EST      19      18        6
+FIN     113     100       11
+FRA     343     100       11
+GRC     130     100       11
+HUN      21      21       10
+IDN     165     100       11
+IND     168     100       11
+IRL      43      43       10
+ITA     161     100       11
+JPN     167     100       11
+KOR     162     100       11
+LTU      22      22        9
+LUX      10      10        5
+LVA      10      10        5
+MEX     109     100       10
+NLD      81      80       11
+POL     305     100       11
+PRT      32      32       11
+ROU     124     100       11
+SGP     119     100       11
+SWE     137     100       11
+USA     392     100       11
+ZAF     105     100       10

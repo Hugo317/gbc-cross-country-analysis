@@ -1,0 +1,35 @@
+iso3,iso2,eurostat_code,name,region,eu_group,is_eu,is_euro,is_oecd,small_firm_sample
+AUT,AT,AT,Austria,Europe,Western,true,true,true,false
+BEL,BE,BE,Belgium,Europe,Western,true,true,true,false
+CZE,CZ,CZ,Czechia,Europe,Eastern,true,false,true,true
+DNK,DK,DK,Denmark,Europe,Nordic,true,false,true,false
+EST,EE,EE,Estonia,Europe,Eastern,true,true,true,true
+FIN,FI,FI,Finland,Europe,Nordic,true,true,true,false
+FRA,FR,FR,France,Europe,Western,true,true,true,false
+DEU,DE,DE,Germany,Europe,Western,true,true,true,false
+GRC,GR,EL,Greece,Europe,Southern,true,true,true,false
+HUN,HU,HU,Hungary,Europe,Eastern,true,false,true,false
+IRL,IE,IE,Ireland,Europe,Western,true,true,true,true
+ITA,IT,IT,Italy,Europe,Southern,true,true,true,false
+LVA,LV,LV,Latvia,Europe,Eastern,true,true,true,true
+LTU,LT,LT,Lithuania,Europe,Eastern,true,true,true,true
+LUX,LU,LU,Luxembourg,Europe,Western,true,true,true,false
+NLD,NL,NL,Netherlands,Europe,Western,true,true,true,false
+POL,PL,PL,Poland,Europe,Eastern,true,false,true,false
+PRT,PT,PT,Portugal,Europe,Southern,true,true,true,false
+ROU,RO,RO,Romania,Europe,Eastern,true,false,false,false
+ESP,ES,ES,Spain,Europe,Southern,true,true,true,false
+SWE,SE,SE,Sweden,Europe,Nordic,true,false,true,false
+USA,US,,United States,North America,,false,false,true,false
+CAN,CA,,Canada,North America,,false,false,true,false
+MEX,MX,,Mexico,Latin America,,false,false,true,false
+BRA,BR,,Brazil,Latin America,,false,false,false,false
+CHL,CL,,Chile,Latin America,,false,false,true,false
+JPN,JP,,Japan,East Asia,,false,false,true,false
+KOR,KR,,South Korea,East Asia,,false,false,true,false
+CHN,CN,,China,East Asia,,false,false,false,false
+IND,IN,,India,South Asia,,false,false,false,false
+SGP,SG,,Singapore,Southeast Asia,,false,false,false,false
+IDN,ID,,Indonesia,Southeast Asia,,false,false,false,false
+AUS,AU,,Australia,Oceania,,false,false,true,false
+ZAF,ZA,,South Africa,Africa,,false,false,false,false

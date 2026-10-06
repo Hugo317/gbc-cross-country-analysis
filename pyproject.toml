@@ -1,0 +1,21 @@
+[project]
+name = "global-business-comparison"
+version = "0.1.0"
+description = "How country conditions relate to company performance (40 countries)"
+requires-python = ">=3.11"
+dependencies = [
+    "requests",
+    "pandas",
+    "pyarrow",
+    "pyyaml",
+    "duckdb",
+    "psycopg[binary]",
+    "sqlalchemy",
+    "yfinance",
+    "eurostat",
+]
+
+[dependency-groups]
+dev = ["jupyter", "ipykernel"]
+dash = ["dash", "dash-bootstrap-components", "plotly", "statsmodels", "scipy", "scikit-learn"]
+app = ["streamlit", "plotly", "statsmodels", "scikit-learn", "scipy"]

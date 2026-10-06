@@ -1,0 +1,27 @@
+{
+  "id": "H13",
+  "title": "Size and sector: who carries the country effect",
+  "statement": "The development\u2013ROA link is weaker for large companies.",
+  "expected_sign": 1,
+  "effect": 3.098235909171273,
+  "ci_low": 1.3077182325361452,
+  "ci_high": 4.8887535858064,
+  "effect_unit": "pp ROA, development \u00d7 size rank interaction",
+  "p_primary": 0.0075,
+  "p_method": "wild cluster bootstrap",
+  "n": 10220,
+  "clusters": 34,
+  "robust_share": 1.0,
+  "replication_coef": 6.060631074772637,
+  "replication_p": 0.0045,
+  "replication_same_sign": true,
+  "verdict": "supported",
+  "notebook": "1.13_size_and_sector_splits.ipynb",
+  "notes": [
+    "Primary: development \u00d7 size interaction = +3.10 pp (effect at average size -1.12 pp per SD), wild p = 0.007, 34 countries, 10,220 company-years.",
+    "By size: small -2.01; medium -1.23; large -0.19 pp per SD.",
+    "Robustness: predicted sign in 100% of seven samples. ESEF replication: +6.06 pp (wild p = 0.004), same direction.",
+    "By sector: development effect negative in 10 of 11 sectors; q < 0.10 in 5. Institutions \u00d7 size: +2.98 (p = 0.008).",
+    "VERDICT H13: SUPPORTED"
+  ]
+}

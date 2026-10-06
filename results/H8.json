@@ -1,0 +1,27 @@
+{
+  "id": "H8",
+  "title": "Stock returns and country development",
+  "statement": "Listed companies in more developed countries earn lower real stock returns.",
+  "expected_sign": -1,
+  "effect": -0.7931822042673033,
+  "ci_low": -3.3632724826358817,
+  "ci_high": 1.776908074101275,
+  "effect_unit": "pp real stock return per +1 SD development",
+  "p_primary": 0.587,
+  "p_method": "wild cluster bootstrap",
+  "n": 13955,
+  "clusters": 34,
+  "robust_share": 1.0,
+  "replication_coef": -2.177927427351876,
+  "replication_p": 0.2745,
+  "replication_same_sign": true,
+  "verdict": "not supported",
+  "notebook": "1.8_market_outcomes.ipynb",
+  "notes": [
+    "Primary: +1 SD development \u2192 -0.79 pp real stock return (typical 4.0%), wild p = 0.587, 34 countries, 13,955 company-years.",
+    "Robustness: predicted sign in 100% of seven samples. Replication on 2023\u20132024 only (same firms, not independent): -2.18 pp (wild p = 0.275), same direction.",
+    "Risk: +1 SD development \u2192 -6.42 pp annualised volatility (wild p = 0.030); valuation: -0.11 in log price/book (wild p = 0.377).",
+    "Country level, return vs ROA: \u03c1 = +0.31 (n = 33).",
+    "VERDICT H8: NOT SUPPORTED"
+  ]
+}

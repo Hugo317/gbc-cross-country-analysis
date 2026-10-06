@@ -1,0 +1,110 @@
+screener AUT: 428 candidates
+screener BEL: 109 candidates
+screener CZE: 50 candidates
+screener DNK: 109 candidates
+screener EST: 19 candidates
+screener FIN: 119 candidates
+screener FRA: 378 candidates
+screener DEU: 440 candidates
+screener GRC: 143 candidates
+screener HUN: 28 candidates
+screener IRL: 18 candidates
+screener ITA: 415 candidates
+screener LVA: 11 candidates
+screener LTU: 22 candidates
+screener LUX: 0 candidates
+screener MLT: 0 candidates
+screener NLD: 107 candidates
+screener POL: 377 candidates
+screener PRT: 34 candidates
+screener ROU: 128 candidates
+screener ESP: 184 candidates
+screener SWE: 147 candidates
+screener USA: 165 candidates
+screener CAN: 165 candidates
+screener MEX: 162 candidates
+screener BRA: 165 candidates
+screener CHL: 96 candidates
+screener JPN: 165 candidates
+screener KOR: 165 candidates
+screener CHN: 165 candidates
+screener IND: 165 candidates
+screener SGP: 164 candidates
+screener IDN: 163 candidates
+screener AUS: 165 candidates
+screener ZAF: 130 candidates
+AUT: 447 candidates, 26 valid
+BEL: 111 candidates, 102 valid
+CZE: 51 candidates, 22 valid
+DNK: 112 candidates, 104 valid
+EST: 23 candidates, 19 valid
+FIN: 123 candidates, 113 valid
+FRA: 380 candidates, 343 valid
+DEU: 470 candidates, 46 valid
+GRC: 146 candidates, 130 valid
+HUN: 34 candidates, 21 valid
+IRL: 37 candidates, 28 valid
+ITA: 430 candidates, 63 valid
+LVA: 11 candidates, 10 valid
+LTU: 22 candidates, 22 valid
+LUX: 11 candidates, 10 valid
+MLT: 2 candidates, 1 valid
+NLD: 107 candidates, 81 valid
+POL: 378 candidates, 307 valid
+PRT: 34 candidates, 32 valid
+ROU: 128 candidates, 124 valid
+ESP: 184 candidates, 159 valid
+SWE: 157 candidates, 138 valid
+USA: 170 candidates, 83 valid
+CAN: 186 candidates, 87 valid
+MEX: 187 candidates, 28 valid
+BRA: 198 candidates, 30 valid
+HTTP Error 500: {"quoteSummary":{"result":null,"error":{"code":"internal-error","description":"internal-error"}}}
+CHL: 96 candidates, 89 valid
+JPN: 168 candidates, 167 valid
+KOR: 168 candidates, 162 valid
+CHN: 172 candidates, 169 valid
+IND: 168 candidates, 168 valid
+SGP: 166 candidates, 119 valid
+IDN: 166 candidates, 165 valid
+AUS: 172 candidates, 139 valid
+ZAF: 130 candidates, 105 valid
+
+Per country (valid candidates -> seeded):
+      valid  seeded  sectors
+iso3                        
+AUS     139     100       11
+AUT      26      26        9
+BEL     102     100       11
+BRA      30      30       10
+CAN      87      80       10
+CHL      89      89       11
+CHN     169     100       11
+CZE      22      22        8
+DEU      46      46       11
+DNK     104     100       11
+ESP     159     100       11
+EST      19      18        6
+FIN     113     100       11
+FRA     343     100       11
+GRC     130     100       11
+HUN      21      21       10
+IDN     165     100       11
+IND     168     100       11
+IRL      28      28        8
+ITA      63      63       11
+JPN     167     100       11
+KOR     162     100       11
+LTU      22      22        9
+LUX      10      10        5
+LVA      10      10        5
+MEX      28      28        7
+MLT       1       1        1
+NLD      81      80       11
+POL     307     100       11
+PRT      32      32       11
+ROU     124     100       11
+SGP     119     100       11
+SWE     138     100       11
+USA      83      82       11
+ZAF     105     100       10

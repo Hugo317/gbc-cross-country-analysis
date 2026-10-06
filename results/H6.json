@@ -1,0 +1,27 @@
+{
+  "id": "H6",
+  "title": "EU labour cost and productivity",
+  "statement": "Higher hourly labour costs go with higher productivity in the EU.",
+  "expected_sign": 1,
+  "effect": 0.9025974025974025,
+  "ci_low": 0.7058593150053756,
+  "ci_high": 0.9788527480225073,
+  "effect_unit": "Spearman \u03c1, hourly labour cost vs value added per employee",
+  "p_primary": 2.1977492069540088e-08,
+  "p_method": "Spearman test (analytic)",
+  "n": 21,
+  "clusters": 21,
+  "robust_share": 0.9583333333333334,
+  "replication_coef": 0.8844155844155844,
+  "replication_p": 1.0382942326089104e-07,
+  "replication_same_sign": true,
+  "verdict": "supported",
+  "elasticity": 0.8715194328670834,
+  "notebook": "1.6_eu_labour_cost_and_productivity.ipynb",
+  "notes": [
+    "Primary: labour cost vs productivity \u03c1 = +0.90 (95% CI +0.71 to +0.98), p = 0.00000, n = 21 EU countries; elasticity 0.87 (a 10% higher labour cost goes with 8.7% higher productivity).",
+    "Robustness: positive in 96% of 24 variants. Alternative output measure (World Bank GDP per person): \u03c1 = +0.88.",
+    "Exploratory: labour cost vs profit measures: gross operating rate -0.21; profit share NFC -0.37; ROE NFC -0.17; median ROA -0.24; median op. margin +0.39; loss share -0.01. 0 of 6 have q < 0.10.",
+    "VERDICT H6: SUPPORTED"
+  ]
+}
