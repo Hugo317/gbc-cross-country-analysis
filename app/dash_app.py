@@ -240,6 +240,87 @@ layout_countries = html.Div([
     cap("Median return on assets of listed firms in each country and fiscal year."),
 ])
 
+# ---------------------------------------------------------------- company level: companies compared inside the same country
+CO = X["company"]
+WS = pd.DataFrame(CO["slopes"])
+W_UNIT = {"W1": 0.1, "W2": 1.0}                                     # equity ratio is shown per +0.1
+W_LABEL = {"W1": ("equity ratio", "pp ROA per +0.1 equity ratio"), "W2": ("company size", "pp ROA, largest vs smallest company")}
+W1S, W2S = CO["summary"]["W1"], CO["summary"]["W2"]
+AB1 = json.loads((DATA / "results" / "AB1.json").read_text())
+EUC = pd.DataFrame(CO["eu_countries"])
+SEC = CO["sector"]
+EUC_CTRL = CO["eu_controlled"]
+
+
+def forest_fig(h):
+    u, s = W_UNIT[h], CO["summary"][h]
+    d = WS[WS.trait == h].assign(c=lambda d: d.coef * u, lo=lambda d: (d.coef - 1.96 * d.se) * u, hi=lambda d: (d.coef + 1.96 * d.se) * u).sort_values("c")
+    fig = px.scatter(d, x="c", y="country", template=TPL, color_discrete_sequence=[REDHI], error_x=d.hi - d.c, error_x_minus=d.c - d.lo,
+                     labels={"c": W_LABEL[h][1], "country": ""}, hover_data={"n": True, "firms": True, "c": ":.2f", "country": False})
+    fig.add_vline(x=0, line_color=MUTED)
+    fig.add_vline(x=s["mean"] * u, line_dash="dot", line_color=AMBER, annotation_text=f'pooled {s["mean"] * u:+.2f}', annotation_font_color=AMBER)
+    fig.update_layout(height=680, margin=dict(l=0, r=10, t=20, b=40))
+    fig.update_yaxes(categoryorder="array", categoryarray=list(d.country), tickfont=dict(size=11))
+    return fig
+
+
+def sector_fig():
+    d = pd.DataFrame({"sector": list(SEC["mean"]), "premium": list(SEC["mean"].values()), "positive": [SEC["share_positive"][k] for k in SEC["mean"]],
+                      "countries": [SEC["countries"][k] for k in SEC["mean"]]}).sort_values("premium")
+    fig = px.bar(d, x="premium", y="sector", orientation="h", template=TPL, color_discrete_sequence=[REDHI], hover_data={"positive": ":.0%", "countries": True, "premium": ":.2f"},
+                 labels={"premium": "ROA vs the country median (pp), average across countries", "sector": ""})
+    fig.update_layout(height=400, margin=dict(l=0, r=10, t=10, b=40))
+    return fig
+
+
+def eu_fig():
+    d = EUC.assign(group=np.where(EUC.eu, "EU", "non-EU"))
+    fig = px.strip(d, x="adj_roa", y="group", color="group", hover_name="name", template=TPL, color_discrete_map={"EU": "#d9d4cf", "non-EU": REDHI},
+                   labels={"adj_roa": "ROA after sector, size and year (pp, relative)", "group": ""})
+    for g, v in d.groupby("group").adj_roa.mean().items():
+        fig.add_shape(type="line", x0=v, x1=v, y0=-0.4 if g == "EU" else 0.6, y1=0.4 if g == "EU" else 1.4, line=dict(color=AMBER, dash="dot"))
+    fig.update_traces(marker_size=11)
+    fig.update_layout(height=260, margin=dict(l=0, r=10, t=10, b=40), showlegend=False)
+    return fig
+
+
+layout_company = html.Div([
+    html.H5("Inside a country: which companies earn more, and does it repeat?"),
+    dbc.Alert([html.B("How this differs from the other tabs. "), "Everywhere else we compare countries, and there are only 34. Here we compare companies inside the same country, "
+               "where the economy, tax system and institutions are shared, then run the same comparison in every country and ask whether the pattern repeats. "
+               "Each country is a replication."], className="alert-quest"),
+    dbc.Row([dbc.Col(xs=6, md=3, children=kpi("Equity share and ROA", f'{W1S["mean"] * 0.1:+.1f} pp', "per +0.1 equity ratio")),
+             dbc.Col(xs=6, md=3, children=kpi("Repeats in", f'{round(W1S["same_sign_share"] * W1S["k"])} of {W1S["k"]}', "countries, same direction")),
+             dbc.Col(xs=6, md=3, children=kpi("Sector ranking", f'{SEC["agreement"]:+.2f}', f'country vs the rest (shuffled: {SEC["placebo"]:+.2f})')),
+             dbc.Col(xs=6, md=3, children=kpi("Company size", "no pattern", f'same direction in {W2S["same_sign_share"]:.0%} of countries'))], className="g-3 mb-4"),
+    html.H5("1 · Companies with more equity financing earn more, in almost every country"),
+    html.P("Equity ratio = equity / total assets. Inside each country, companies funded more by equity earn higher return on assets, after allowing for sector and year.", className="text-muted"),
+    dbc.RadioItems(id="w-trait", options=[{"label": "Equity ratio (repeats)", "value": "W1"}, {"label": "Company size (does not repeat)", "value": "W2"}], value="W1", inline=True, className="mb-2"),
+    dcc.Graph(id="w-forest", config=CFG), html.Div(id="w-note", className="text-muted"),
+    cap("Each dot is one country's own estimate, with its 95% range; the dotted line is the pooled value. Countries with fewer than 30 listed companies are left out. "
+        "When the dots all fall on the same side of zero, the pattern repeats; when they scatter on both sides, it does not."),
+    stats_toggle(f'Equity ratio: pooled {W1S["mean"] * 0.1:+.2f} pp (95% CI {W1S["ci_low"] * 0.1:+.2f} to {W1S["ci_high"] * 0.1:+.2f}), random-effects p = {W1S["p"]:.2g}; '
+                 f'{W1S["significant_same_sign"]} countries significant in the same direction, {W1S["significant_opposite"]} in the opposite one; leave-one-country-out agreement {W1S["loo_agreement"]:.0%}.',
+                 f'Size: pooled {W2S["mean"]:+.2f} pp (95% CI {W2S["ci_low"]:+.2f} to {W2S["ci_high"]:+.2f}), p = {W2S["p"]:.2g}; {W2S["significant_same_sign"]} countries significant in the pooled direction, {W2S["significant_opposite"]} in the opposite one.'),
+    html.Small("An equity ratio can also be high because the company has been profitable (retained earnings), so this is an association, not proof that equity financing raises returns.", className="text-muted d-block mt-2"),
+    html.Hr(),
+    html.H5("2 · The sector pecking order is the same everywhere"),
+    html.P(f'Each country\'s ranking of sectors by ROA matches the average of the other countries (correlation {SEC["agreement"]:+.2f}, positive in {SEC["agreement_positive"]} of {SEC["agreement_n"]} countries). '
+           f'If sector labels are shuffled inside each country the correlation falls to {SEC["placebo"]:+.2f}, so the agreement is real.', className="text-muted"),
+    dcc.Graph(figure=sector_fig(), config=CFG),
+    cap("Average ROA of each sector relative to its country's median company. Technology and consumer-defensive companies sit above the median in most countries; financials sit below it almost everywhere (financial ROA is structurally low)."),
+    html.Hr(),
+    html.H5("3 · EU companies earn less than non-EU companies, but this is a description, not an effect"),
+    dbc.Row([dbc.Col([dcc.Graph(figure=eu_fig(), config=CFG, style={"height": "260px"}), cap("Each dot is a country; dotted lines are group averages. ROA is adjusted for sector, company size and year.")], md=7),
+             dbc.Col([html.H2(f'{AB1["effect"]:+.1f} pp', className="big"), html.Small("EU minus non-EU, ROA", className="text-muted d-block mb-2"),
+                      html.P(f'The gap holds in every robustness check (same sign in {AB1["robust_share"]:.0%}). About {1 - EUC_CTRL["coef"] / AB1["effect"]:.0%} of it is the EU being more developed; {EUC_CTRL["coef"]:+.1f} pp remains when development is held fixed. '
+                             'It is concentrated in smaller companies and close to zero for the largest ones.'),
+                      html.Small("Countries cannot be randomly assigned to the EU, so the gap also reflects tax hubs, accounting rules and which companies are listed. Do not read it as the effect of membership.", className="text-muted")], md=5)]),
+    stats_toggle(f'p = {AB1["p_primary"]:.2g} (wild cluster bootstrap), country permutation p = {AB1["p_permutation"]:.2g}; 95% CI {AB1["ci_low"]:.2f} to {AB1["ci_high"]:.2f}; {AB1["clusters"]} countries, {AB1["n"]:,} firm-years. No ESEF replication is possible (EU filers only).'),
+    html.Hr(),
+    html.Small("Listed companies, fiscal 2022–2025, 28 of 34 countries. Associations, not causation. Notebooks 2.1 and 3.1 hold the full analysis.", className="text-muted"),
+])
+
 # ---------------------------------------------------------------- method
 def pipeline():
     steps = [("Sources", "World Bank · IMF · Eurostat · Yahoo Finance · ESEF"), ("PostgreSQL", "staging → core → mart"), ("DuckDB", "one shared fact table"),
@@ -280,6 +361,7 @@ layout_method = html.Div([
             html.Li("Listed firms only; yfinance is unofficial and sector-skewed; ESEF has no sector."),
             html.Li("34 countries limit what can be separated: development, institutions and openness move together."),
             html.Li("H1, H2, H3, H5 and H13 were suggested by looking at the same data; treat as exploratory."),
+            html.Li("Company-level tab (notebooks 2.1, 3.1): the equity-ratio and sector results are associations between companies inside countries; both traits were checked on the same data before the notebook was finalised, so they sit outside the 15-test correction. Plain firm-level t-tests between country groups are badly over-confident (about 65% of random splits look significant), which is why the comparisons use country-level inference."),
             html.Li("Yahoo and ESEF agree almost perfectly (H15), so ESEF replications are not independent for the companies in both sources."),
             html.Li("Eurostat business statistics change definition between 2020 and 2021 (levels jump about 33%). The two tables are stored as separate series and every analysis uses only 2021 onward, so no result spans the break.")]), title="Caveats"),
         dbc.AccordionItem([
@@ -296,7 +378,8 @@ app.layout = dbc.Container([
               html.P(["34 countries, 10,000+ firm-years. ", html.A(f"by {AUTHOR}", href=GITHUB, target="_blank"), " · ", html.A("code on GitHub", href=REPO, target="_blank")],
                      className="text-muted mb-0")], className="hero"),
     dbc.Tabs([dbc.Tab(layout_overview, label="Overview", tab_id="overview"), dbc.Tab(layout_explore, label="Explore", tab_id="explore"),
-              dbc.Tab(layout_countries, label="Countries", tab_id="countries"), dbc.Tab(layout_method, label="Method & caveats", tab_id="method"),
+              dbc.Tab(layout_countries, label="Countries", tab_id="countries"), dbc.Tab(layout_company, label="Company level", tab_id="company"),
+              dbc.Tab(layout_method, label="Method & caveats", tab_id="method"),
               dbc.Tab(layout_about, label="About", tab_id="about")],
              active_tab="overview", className="mb-3"),
     html.Footer([f"Built by {AUTHOR} · ", html.A("GitHub", href=GITHUB, target="_blank"), " · ", html.A("source & data pipeline", href=REPO, target="_blank")]),
@@ -380,6 +463,13 @@ def country_view(names, theme, sector, years):
     roa.update_xaxes(dtick=1)
     bars.update_layout(legend=dict(orientation="h", y=-0.08, title=None))
     return cards, bars, roa
+
+
+@callback(Output("w-forest", "figure"), Output("w-note", "children"), Input("w-trait", "value"))
+def w_view(h):
+    s = CO["summary"][h]
+    k = round(s["same_sign_share"] * s["k"])
+    return forest_fig(h), f'{k} of {s["k"]} countries have the same direction as the pooled estimate ({s["same_sign_share"]:.0%}).'
 
 
 @callback(Output("hyp-detail", "children"), Input("hyp", "value"))

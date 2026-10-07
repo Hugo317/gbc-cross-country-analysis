@@ -1,0 +1,26 @@
+{
+  "id": "W2",
+  "title": "Size and ROA inside countries",
+  "statement": "Within a country, company size is related to ROA (direction not predicted).",
+  "expected_sign": 0,
+  "effect": -0.4264228627638234,
+  "ci_low": -2.9615260869592284,
+  "ci_high": 2.108680361431581,
+  "effect_unit": "pp ROA, largest vs smallest company, within country",
+  "p_primary": 0.73266880231401,
+  "p_method": "random-effects meta-analysis across countries (Hartung-Knapp)",
+  "n": 9837,
+  "clusters": 28,
+  "robust_share": 0.5,
+  "replication_coef": null,
+  "replication_p": null,
+  "replication_same_sign": null,
+  "verdict": "not supported",
+  "notebook": "3.1_within_country_company_traits.ipynb",
+  "notes": [
+    "Pooled across 28 countries: -0.43 pp (largest vs smallest company; 95% CI -2.96 to +2.11), random-effects p = 0.7327.",
+    "Repeats: same sign in 50% of countries (5 significantly, 4 significantly opposite); leave-one-country-out agreement 50%; between-country spread tau = 5.09 pp, I2 = 77%.",
+    "Robustness: pooled sign unchanged in 57% of 7 samples.",
+    "VERDICT W2: NOT SUPPORTED"
+  ]
+}

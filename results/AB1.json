@@ -1,0 +1,28 @@
+{
+  "id": "AB1",
+  "title": "EU vs non-EU: gap in company ROA",
+  "statement": "Companies in EU countries earn a different ROA than those in non-EU countries (two-sided).",
+  "expected_sign": 0,
+  "effect": -2.2835392748490193,
+  "ci_low": -3.412300845343241,
+  "ci_high": -1.1547777043547978,
+  "effect_unit": "pp ROA, EU minus non-EU",
+  "p_primary": 0.0005,
+  "p_method": "wild cluster bootstrap",
+  "p_permutation": 0.00055,
+  "n": 10220,
+  "clusters": 34,
+  "robust_share": 1.0,
+  "replication_coef": null,
+  "replication_p": null,
+  "replication_same_sign": null,
+  "verdict": "supported",
+  "notebook": "2.1_country_groups_a_vs_b.ipynb",
+  "notes": [
+    "Primary: EU minus non-EU = -2.28 pp ROA (95% CI -3.41 to -1.15), wild p = 0.0005, permutation p = 0.0006, 34 countries, 10,220 company-years.",
+    "Holding development constant the gap is -1.61 pp (wild p = 0.002). High vs low development: -1.65 pp (p = 0.019); high vs low institutions: -2.01 pp (p = 0.003).",
+    "By size: small -5.36; medium -1.81; large -0.15 pp.",
+    "Robustness: same sign in 100% of 40 checks (six samples and 34 leave-one-out runs). ESEF replication not possible (EU filers only).",
+    "VERDICT AB1: SUPPORTED"
+  ]
+}

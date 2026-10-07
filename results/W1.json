@@ -1,0 +1,26 @@
+{
+  "id": "W1",
+  "title": "Equity ratio and ROA inside countries",
+  "statement": "Within a country, companies with a higher equity ratio earn higher ROA.",
+  "expected_sign": 1,
+  "effect": 1.1588806744988605,
+  "ci_low": 0.9559726629841615,
+  "ci_high": 1.3617886860135595,
+  "effect_unit": "pp ROA per +0.1 equity ratio, within country",
+  "p_primary": 4.261729519767321e-12,
+  "p_method": "random-effects meta-analysis across countries (Hartung-Knapp)",
+  "n": 9837,
+  "clusters": 28,
+  "robust_share": 0.9642857142857143,
+  "replication_coef": null,
+  "replication_p": null,
+  "replication_same_sign": null,
+  "verdict": "supported",
+  "notebook": "3.1_within_country_company_traits.ipynb",
+  "notes": [
+    "Pooled across 28 countries: +1.16 pp (per +0.1 equity ratio; 95% CI +0.96 to +1.36), random-effects p = 0.0000.",
+    "Repeats: same sign in 96% of countries (22 significantly, 0 significantly opposite); leave-one-country-out agreement 96%; between-country spread tau = 0.38 pp, I2 = 58%.",
+    "Robustness: pooled sign unchanged in 100% of 7 samples.",
+    "VERDICT W1: SUPPORTED"
+  ]
+}
