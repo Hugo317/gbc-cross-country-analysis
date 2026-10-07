@@ -26,6 +26,6 @@ The dashboard reads only `app/data/`, so it runs without the database.
 | `src/` | data fetching, loading into PostgreSQL / DuckDB, transforms and analysis helpers |
 | `notebooks/` | data catalog, EDA and the hypothesis notebooks |
 | `results/` | one JSON per hypothesis, read by the dashboard |
-| `app/` | the Plotly Dash dashboard, its data extract and deploy files (`Dockerfile`, `render.yaml` at the root) |
+| `app/` | the Plotly Dash dashboard, its data extract and its `Dockerfile` (deployed on Render with the `render.yaml` at the repo root) |
 
 Data sources: World Bank WDI and WGI, IMF DataMapper, Eurostat, Yahoo Finance (via yfinance, unofficial) and ESEF/xBRL filings. See the Method & caveats tab of the dashboard for the limits of the data.
