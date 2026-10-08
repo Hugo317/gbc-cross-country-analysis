@@ -93,3 +93,4 @@ input.dash-options-list-option-checkbox { appearance: none; -webkit-appearance: 
 input.dash-options-list-option-checkbox:checked { background: var(--red-hi); border-color: var(--red-hi); }
 input.dash-options-list-option-checkbox { appearance: none; -webkit-appearance: none; width: 14px; height: 14px; border: 1.5px solid var(--muted); border-radius: 3px; background: transparent; flex: none; }
 input.dash-options-list-option-checkbox:checked { background: var(--red-hi); border-color: var(--red-hi); }
+.form-check-input[type=radio]:not(:checked) { border: 1.5px solid var(--muted) !important; background-color: transparent !important; }

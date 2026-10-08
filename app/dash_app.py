@@ -83,6 +83,18 @@ MIN_SECTOR_FIRMS = 5                      # a sector or year slice needs this ma
 MINUS = "−"
 
 
+def human(v):
+    for k, u in ((1e12, "T"), (1e9, "B"), (1e6, "M"), (1e3, "k")):
+        if v >= k:
+            return f"{v / k:g}{u}"
+    return f"{v:g}"
+
+
+def log_ticks(lo, hi):
+    ks = range(int(np.floor(np.log10(lo))), int(np.ceil(np.log10(hi))) + 1)
+    return [10.0 ** k for k in ks], [human(10.0 ** k) for k in ks]
+
+
 def sg(x, d=1):
     """Signed number with a true minus sign; tiny values print as plain zero."""
     if x is None or pd.isna(x):
@@ -153,7 +165,7 @@ def stats_toggle(*lines):
 # (id, headline, number, unit): the number and unit shown on each finding card
 FINDINGS = [
     ("H0", "Firms in more developed countries earn slightly less on their assets", lambda r: f'{sg(r["effect"])} pp ROA', "points of ROA per step up in development (+1 SD)"),
-    ("H13", "The effect sits in small firms; the largest third of firms show almost none", lambda r: f'{sg(r["effect"], 2)} pp', "straight-line estimate of how much the effect improves from the smallest to the largest firm (grouped in thirds: −2.0, −1.2 and −0.2 pp)"),
+    ("H13", "The effect shows up in small firms, while the largest third of firms show almost none.", lambda r: f'{sg(r["effect"], 2)} pp', "straight-line estimate of how much the effect improves from the smallest to the largest firm (grouped in thirds: −1.7, −1.2 and −0.2 pp)"),
     ("H11", "The main finding survives dropping any single country", lambda r: f'{sg(r["effect"])} pp', "weakest of 34 runs, each leaving one country out"),
     ("H5", "Countries with deeper bank credit have deeper stock markets", lambda r: f'ρ = {sg(r["effect"], 2)}', "match between credit and stock-market size, 20 countries"),
     ("H6", "In the EU, higher labour cost goes with higher productivity", lambda r: f'ρ = {sg(r["effect"], 2)}', "match between hourly labour cost and output per worker"),
@@ -162,27 +174,18 @@ FINDINGS = [
 ]
 SHORT = {"H0": "Development and ROA", "H13": "Small vs large firms", "H5": "Credit and stock markets", "H6": "EU labour cost and output", "H1": "Institutions and losses"}
 PLAIN = {
-    "H0": "Across 34 countries, companies in richer, more developed countries tend to earn a bit less profit for every euro of assets they own. Each step up the development "
-          "scale goes with about 1.1 percentage points lower return on assets. A second, independent data source shows the same pattern, and it survives removing any single "
+    "H0": "Across 34 countries, companies in richer, more developed countries tend to earn a bit less profit for each unit of assets they own. Each step up the development "
+          "scale goes with about 1.1 percentage points lower return on assets. A second data source (the official filings, ESEF) shows the same pattern, and it survives removing any single "
           "country. It is a pattern, not proof of cause: it could reflect tougher competition, higher costs, or the kinds of companies that are listed.",
-    "H13": "The pattern is not the same for everyone. Small companies carry it: for them, a more developed country goes with about 2 points lower ROA. For medium firms it is about −1.2 points. (The big number above is a straight-line estimate of the improvement from the smallest to the largest firm; grouping firms in thirds, as in the charts below, gives these round numbers.) For the largest third of "
+    "H13": "The pattern is not the same for everyone. Small companies carry it: for them, a more developed country goes with about 1.7 points lower ROA. For medium firms it is about 1.2 points lower, and for the largest third about 0.2. (The big number above is a straight-line estimate of the improvement from the smallest to the largest firm; grouping firms in thirds, as in the charts below, gives these rounder numbers.) For the largest third of "
            "companies the effect is close to zero. We noticed this while exploring the data, so treat it as a strong lead rather than a settled fact.",
-    "H11": "This is a stress test of the main finding. We re-ran it 34 times, each time leaving out one country, and with other ways of measuring development. The result stayed "
-           "negative every time. The weakest case (dropping India) is still about −0.9 points. So the main finding does not depend on one or two unusual countries.",
-    "H5": "Countries where banks lend more to businesses and households also tend to have bigger stock markets. The pattern is strong across the 20 countries with data (a match of "
-          "+0.77, where +1 would be perfect) and stays strong once we account for how rich each country is. One related check, on how many new businesses start, did not confirm a link "
-          "(−0.31, not significant). The result came from exploring the same data, so it is labelled exploratory.",
-    "H6": "Inside the EU, countries where an hour of work costs more also produce more value per worker (a match of +0.90). Roughly, a 10% higher labour cost goes with about 8.7% "
-          "higher output per worker. That fits the idea that expensive labour is paid for by higher productivity.",
-    "H1": "We expected stronger institutions (rule of law, effective government) to go with fewer loss-making companies. The data show the opposite: about 3 points more chance of a "
-          "loss per step up in institutions. But that pattern is driven by small, open economies. Once we account for how open to trade and how big each economy is, it shrinks to about zero. "
-          "So read it as a warning about confusing patterns, not as a real effect of institutions.",
-    "H7": "We asked whether knowing a country's conditions helps predict company ROA in a country the model has never seen. It does not: predictions got slightly worse (the average miss grew by about 0.4 "
-          "ROA points). So country conditions describe patterns across countries but do not help forecast an individual country.",
-    "H16": "We tested 12 newer indicators (energy, climate, tax, banking, currency, broadband and more) to see whether any relates to company ROA beyond what development already explains. "
-           "The strongest, broadband use, shows a match of −0.40, but that is not significant once we allow for having tried 12 indicators (some would look good by luck). So we found no reliable extra link.",
-    "H15": "This is a data check, not a finding about countries. We compared Yahoo Finance profit figures with the officially filed accounts (ESEF) for the same companies and years. "
-           "They match almost perfectly, so the Yahoo numbers can be trusted. The flip side: for the 484 companies in both sources, the second source is not an independent confirmation.",
+    "H11": "This is a stress test of the main finding. We re-ran the analysis 34 times, leaving out one country each time, and also tried other ways of measuring development. The result stayed negative every time. Even the weakest case, with India dropped, is still about −0.9 points. So the main finding doesn't depend on one or two unusual countries.",
+    "H5": "Countries where banks lend more to businesses and households tend to have bigger stock markets. Across the 20 countries with data, the link is strong (+0.77, where +1 would be a perfect match), and it stays strong after we account for how rich each country is. We also checked whether more new businesses starting up goes with this, and found no clear link (−0.31, not significant). We found this result by exploring the same data, so we label it exploratory.",
+    "H6": "Across the EU, countries where an hour of work costs more also produce more per worker, and the two move closely together (a match of +0.90). A 10% higher labour cost goes with about 8.7% higher output per worker. This fits the idea that higher productivity pays for expensive labour.",
+    "H1": "We expected stronger institutions (rule of law, effective government) to go with fewer loss-making companies, but the data show the opposite: each step up in institutions comes with about 3 points more chance of a loss. That pattern comes from small, open economies. Once we account for how open each economy is to trade and how big it is, the gap shrinks to about zero. Treat this as a warning about misleading patterns, not as a real effect of institutions.",
+    "H7": "We tested whether knowing a country's conditions helps predict company ROA in a country the model has never seen. It doesn't. Predictions got slightly worse, with the average miss growing by about 0.4 ROA points. Country conditions describe patterns across countries, but they don't help forecast results for a single country.",
+    "H16": "We tested 12 newer indicators (energy, climate, tax, banking, currency, broadband and more) to see whether any of them relates to company ROA beyond what development already explains. The strongest, broadband use, shows a match of −0.40. But we tried 12 indicators, and some would look good by luck, so after accounting for that, the result is not significant. We found no reliable extra link.",
+    "H15": "This is a data check, not a finding about countries. We compared Yahoo Finance profit figures with the officially filed accounts (ESEF) for the same companies and years, and they match almost perfectly, so the Yahoo numbers can be trusted. The catch is that for the 484 companies in both sources, the second source is not an independent confirmation.",
 }
 VERDICT_TEXT = {"supported": "Holds up", "contradicted": "Surprise: explained away", "not supported": "No clear evidence"}
 CAVEAT_H = {"H5"}                                                   # supported, but a related check did not confirm
@@ -194,6 +197,10 @@ def status_badge(h):
     if v == "contradicted":
         return "Surprise: explained away", "bg-amber"
     if v != "supported":
+        r = HYP[h]
+        lo, hi, ex = r.get("ci_low"), r.get("ci_high"), r.get("expected_sign", 0)
+        if lo is not None and hi is not None and not pd.isna(lo) and not pd.isna(hi) and ex and (hi < 0 or lo > 0) and ((hi < 0) == (ex > 0)):
+            return "Not supported: points the wrong way", "bg-ash"
         return "No clear evidence", "bg-ash"
     if h in NOT_A_TEST:
         return "Check passed", "bg-red"
@@ -218,7 +225,7 @@ BIGOVER = {"H3": (lambda r: f'{sg(r["effect"] * 100, 0)}%', "share of the develo
            "H4": (lambda r: sg(r["effect"], 2), "extra share of the variation in ROA explained by sector × country type"),
            "H7": (lambda r: f'{sg(r["effect"], 2)} pp', "change in prediction accuracy for unseen countries (negative = predictions got worse)"),
            "H16": (lambda r: f'ρ = {sg(r["effect"], 2)}', "match between broadband use and typical company ROA (strongest of 12 indicators tested)")}
-GLOSSARY = [("ROA (return on assets)", "Profit divided by everything the company owns. 5% means 5 cents of profit per euro of assets."),
+GLOSSARY = [("ROA (return on assets)", "Profit divided by everything the company owns. 5% means 5 units of profit for every 100 units of assets."),
             ("pp (percentage points)", "A gap between two percentages. Going from 5% to 4% ROA is 1 pp lower."),
             ("SD (standard deviation)", "A yardstick for 'one typical step'. A country 1 SD above average is about as far above average as the typical country differs from it."),
             ("ρ (rho)", "How closely two things move together, from −1 to +1. 0 means no link, +1 means they always rise together."),
@@ -286,7 +293,7 @@ def evidence_fig():
 
 
 def rest_table():
-    head = html.Thead(html.Tr([html.Th(x) for x in ["", "Question", "What was measured", "Effect", "Chance (p)"]]))
+    head = html.Thead(html.Tr([html.Th(x) for x in ["", "Question", "What was measured", "Effect", "p"]]))
     unit = plain_unit
     rows = [html.Tr([html.Td(hlink(h)), html.Td(HYP[h]["title"]), html.Td(BIGOVER[h][1] if h in BIGOVER else unit(HYP[h]["effect_unit"])),
                      html.Td(BIGOVER[h][0](HYP[h]) if h in BIGOVER else sg(HYP[h]["effect"], 2)),
@@ -411,23 +418,26 @@ def hyp_page(h):
     if h in EXPLORATORY:
         tags.append(dbc.Badge("exploratory", color="warning", text_color="dark", className="me-2"))
     if h in NOT_A_TEST:
-        tags.append(dbc.Badge("check, not a new claim", color="secondary", className="me-2"))
+        tags.append(dbc.Badge("data check, not a new claim", color="secondary", className="me-2"))
     rep = r.get("replication_coef")
+    if rep is not None and not pd.isna(rep) and r.get("replication_same_sign") and not r["effect_unit"].startswith("Spearman"):
+        tags.append(dbc.Badge("confirmed on 2nd data source", className="me-2 bg-ash"))
     own_unit = not r["effect_unit"].startswith("Spearman")
     rep_txt = None
     if own_unit and rep is not None and not pd.isna(rep):
         rep_txt = f'The second data source (official ESEF filings) gives {nf(h, rep)}' + \
-                  ((", pointing the same way." if sign(rep) == sign(r["effect"]) else ", pointing the other way.") if r["verdict"] != "not supported" else ".") + \
+                  ((", pointing the same way." if sign(rep) == sign(r["effect"]) else ", pointing the other way.") if r["verdict"] != "not supported"
+                   else (", with the same sign." if sign(rep) == sign(r["effect"]) else ", with the opposite sign (both are within the range of noise).")) + \
                   (" Both sources show the same pattern, which is the opposite of what we expected." if r["verdict"] == "contradicted" and sign(rep) == sign(r["effect"]) else "")
     elif own_unit and h not in NOT_A_TEST:
         rep_txt = "This idea could not be re-tested on a second data source."
     fig = range_fig(r)
     robust = r.get("robust_share")
-    bullets = [html.Li(f'Our best estimate is {nf(h, r["effect"])}. A reasonable range for the true value is {ci_h(h, r)}.' if fig is not None else "No range could be computed for this one.")]
+    bullets = [html.Li(f'Our best estimate is {nf(h, r["effect"])}. A reasonable range for the true value is {ci_h(h, r)}.' if fig is not None else f'No range was computed for this measure; the p-value is {r["p_primary"]:.2f}.')]
     if ok and robust is not None and not pd.isna(robust):
         bullets.append(html.Li(f"It held in {robust:.0%} of the alternative ways we cut the data."))
     if h == "H1":
-        bullets.append(html.Li("But once trade openness and population size are accounted for, the effect shrinks to about zero (+0.12, p = 0.93). That is why we call it a surprise rather than a finding."))
+        bullets.append(html.Li("Once we account for trade openness and population size, the effect shrinks to about zero (+0.12, p = 0.93). So we treat it as a surprise, not a finding."))
     if rep_txt:
         bullets.append(html.Li(rep_txt))
     bullets.append(html.Li(f'Basis: {sample_txt(r)}.'))
@@ -460,6 +470,8 @@ def hyp_page(h):
         f.update_yaxes(title_standoff=14)
         extra = [html.H5("The surprising pattern", className="mt-4"), graph(f, h=380), cap("Each dot is a country. Further right = stronger institutions; higher up = more loss-making companies.")]
     caveats = [] if h == "H15" else ["This shows an association, not a cause."]
+    if h in CAVEAT_H:
+        caveats.append("The caveat: a related check on how many new businesses start did not confirm a link (−0.31, not significant).")
     if h in EXPLORATORY:
         caveats.append("It was suggested by looking at the same data, so it is a lead rather than proof.")
     if h in NOT_A_TEST:
@@ -604,7 +616,7 @@ layout_company = html.Div([
                  f'Size: pooled {sg(W2S["mean"], 2)} pp (95% range {sg(W2S["ci_low"], 2)} to {sg(W2S["ci_high"], 2)}), p = {W2S["p"]:.2g}; {W2S["significant_same_sign"]} countries significant in the pooled direction, {W2S["significant_opposite"]} in the opposite one.'),
     html.Small(id="w-caveat", className="text-muted d-block mt-2"),
     html.Hr(),
-    html.H5("2 · The sector pecking order is the same everywhere"),
+    html.H5("2 · The sector ranking is the same everywhere"),
     html.P(f'Each country\'s ranking of sectors by ROA matches the average of the other countries (match {sg(SEC["agreement"], 2)} on a −1 to +1 scale, positive in {SEC["agreement_positive"]} of {SEC["agreement_n"]} countries). '
            f'If sector labels are shuffled inside each country the match falls to {sg(SEC["placebo"], 2)}, so the agreement is real.', className="text-muted"),
     graph(sector_fig(), h=420),
@@ -647,7 +659,7 @@ layout_about = html.Div([
     html.H6("What I built", className="subhead"),
     html.Ul([html.Li("A data pipeline that pulls 35 country indicators and 10,000+ company-years from five sources, lands them in PostgreSQL and exports a DuckDB analysis database."),
              html.Li("A structured test of 17 ideas (hypotheses), with a wild cluster bootstrap (only 34 countries) and a correction for testing many ideas at once (Benjamini–Hochberg). 15 of the 17 are counted in the correction; the other 2 are robustness and data checks."),
-             html.Li("A replication on a second, independent filing source (ESEF) and a leave-one-country-out check."),
+             html.Li("A replication on a second filing source (ESEF) and a leave-one-country-out check."),
              html.Li("This dashboard, which is built to be read by people who don't do statistics.")]),
     html.H6("What I would highlight", className="subhead"),
     html.Ul([html.Li("Honest reporting: exploratory findings are labelled, null results are listed, caveats are on the page."),
@@ -674,6 +686,7 @@ layout_method = html.Div([
             html.Li(f"Company accounts cover {WINDOW} in practice (a few earlier and later filings exist but are too few to use on their own). Eurostat business statistics change definition between 2020 and 2021 (levels jump about 33%), so those tables are kept as separate series and used from 2021 onward only.")]), title="Caveats"),
         dbc.AccordionItem([html.P("Click any question to read its page.", className="text-muted small"), hyp_index()], title="Every hypothesis in detail"),
     ], start_collapsed=False, always_open=True),
+    glossary(),
 ])
 
 # ---------------------------------------------------------------- app shell
@@ -726,6 +739,9 @@ def scatter(x, y, colour, sector):
     fig.update_traces(textposition="top center", textfont_color=TEXT, selector=dict(mode="markers+text"))
     fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), xaxis_title=nice(x) + (" (log scale)" if x in LOGS else ""), yaxis_title=OUTCOMES.get(y, y), legend=dict(orientation="h", y=-0.2, title=None))
     fig.update_xaxes(title_standoff=14, type="log" if x in LOGS else "linear")
+    if x in LOGS:
+        tv, tt = log_ticks(d["_x"].min(), d["_x"].max())
+        fig.update_xaxes(tickmode="array", tickvals=tv, ticktext=tt)
     fig.update_yaxes(title_standoff=14)
     rho = d[x].corr(d[y], method="spearman")
     return fig, f"Match between the two (Spearman ρ, from −1 to +1) = {sg(rho, 2)} across {len(d)} countries" + ("" if sector in (None, "all") else f" with at least {MIN_SECTOR_FIRMS} {sector} firms") + ". Descriptive only; bubble size = number of firms."
@@ -744,7 +760,7 @@ def draw_map(metric, scope):
     d = country.reset_index()
     label = {**OUTCOMES, **INDICES}.get(metric, nice(metric))
     fig = px.choropleth(d, locations="iso3", color=metric, hover_name="name", color_continuous_scale=MAP_SCALE, template=TPL, scope=scope, labels={metric: label})
-    fig.update_geos(bgcolor="rgba(0,0,0,0)", showland=True, landcolor="#4a4a52", showcountries=True, countrycolor=BG, showframe=False, showcoastlines=False, showocean=True, oceancolor=BG,
+    fig.update_geos(projection_type="natural earth", bgcolor="rgba(0,0,0,0)", showland=True, landcolor="#4a4a52", showcountries=True, countrycolor=BG, showframe=False, showcoastlines=False, showocean=True, oceancolor=BG,
                     **({"lonaxis_range": [-25, 45], "lataxis_range": [33, 72]} if scope == "europe" else {}))
     fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), coloraxis_colorbar=dict(title=dict(text=label, side="right"), thickness=12, len=0.8))
     return fig
@@ -760,14 +776,15 @@ def cap_countries(v):
 def country_view(names, theme, sector, years):
     picked = (names or ["Germany"])[:3]
     cmap = dict(zip(picked, CC))
+    tile = {"md": 6} if len(picked) > 1 else {"md": True}
     cs = country_stats(sector, tuple(years))
     names = [n for n in picked if n in set(cs.name)] or picked[:1]
     missing = [n for n in picked if n not in set(cs.name)]
     rows = [(cs if n in set(cs.name) else country)[(cs if n in set(cs.name) else country).name == n].iloc[0] for n in names]
     cards = dbc.Row([dbc.Col([html.H5(r["name"], className="mb-2", style={"borderLeft": f"4px solid {cmap[r['name']]}", "paddingLeft": ".5rem"}), dbc.Row([
-        dbc.Col(xs=6, md=6, lg=True, children=kpi("Firms", f'{int(r.firms)}', "small sample" if r.small_firm_sample else "")), dbc.Col(xs=6, md=6, lg=True, children=kpi("Mean ROA", f"{fm(r.roa)}%")),
-        dbc.Col(xs=6, md=6, lg=True, children=kpi("Development", f"{sg(r.dev_index, 2)} SD")), dbc.Col(xs=6, md=6, lg=True, children=kpi("Institutions", f"{sg(r.inst_index, 2)} SD")),
-        dbc.Col(xs=6, md=6, lg=True, children=kpi("Loss-making", f"{r.loss:.0f}%"))],
+        dbc.Col(xs=6, **tile, children=kpi("Firms", f'{int(r.firms)}', "small sample" if r.small_firm_sample else "")), dbc.Col(xs=6, **tile, children=kpi("Mean ROA", f"{fm(r.roa)}%")),
+        dbc.Col(xs=6, **tile, children=kpi("Development", f"{sg(r.dev_index, 2)} SD")), dbc.Col(xs=6, **tile, children=kpi("Institutions", f"{sg(r.inst_index, 2)} SD")),
+        dbc.Col(xs=6, **tile, children=kpi("Loss-making", f"{r.loss:.0f}%"))],
         className="g-2")], md=12 // len(names)) for r in rows], className="g-3 mb-3")
     if missing:
         cards = html.Div([html.Div(f'Not shown: {", ".join(missing)} (fewer than {MIN_SECTOR_FIRMS} firms for this sector and years).', className="text-muted small mb-2"), cards])
