@@ -754,14 +754,15 @@ def scatter(x, y, colour, sector):
     d = with_labels(d, x, y, 9).assign(eu_flag=lambda d: np.where(d.is_eu, "EU", "Non-EU"))
     colour = "eu_flag" if colour == "eu_group" else colour
     d = d.assign(_x=np.exp(d[x]) if x in LOGS else d[x])
-    fig = px.scatter(d, x="_x", y=y, color=colour, text="lab", color_discrete_map={"EU": REDHI, "Non-EU": "#4cc9f0"}, custom_data=["name", "firms"], size="firms", size_max=18, template=TPL,
+    d["xtxt"] = d["_x"].map(lambda v: human(v) if x in LOGS else fm(v, 2))
+    fig = px.scatter(d, x="_x", y=y, color=colour, text="lab", color_discrete_map={"EU": REDHI, "Non-EU": "#4cc9f0"}, custom_data=["name", "firms", "xtxt"], size="firms", size_max=18, template=TPL,
                      color_discrete_sequence=DISTINCT)
     if len(d) > 3:
         b = np.polyfit(d[x], d[y], 1)
         xs = np.linspace(d[x].min(), d[x].max(), 20)
         fig.add_trace(go.Scatter(x=np.exp(xs) if x in LOGS else xs, y=np.polyval(b, xs), mode="lines", line=dict(color=MUTED, dash="dash"), name="fit", showlegend=False, hoverinfo="skip"))
     fig.update_traces(textposition="top center", textfont_color=TEXT, selector=dict(mode="markers+text"))
-    fig.update_traces(hovertemplate="<b>%{customdata[0]}</b><br>" + nice(x) + ": %{x:,.3~s}<br>" + OUTCOMES.get(y, y) + ": %{y:,.2f}<br>Firms: %{customdata[1]}<extra></extra>", selector=dict(mode="markers+text"))
+    fig.update_traces(hovertemplate="<b>%{customdata[0]}</b><br>" + nice(x) + ": %{customdata[2]}<br>" + OUTCOMES.get(y, y) + ": %{y:,.2f}<br>Firms: %{customdata[1]}<extra></extra>", selector=dict(mode="markers+text"))
     fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), xaxis_title=nice(x) + (" (log scale)" if x in LOGS else ""), yaxis_title=OUTCOMES.get(y, y), legend=dict(orientation="h", y=-0.2, title=None))
     fig.update_xaxes(title_standoff=14, type="log" if x in LOGS else "linear")
     if x in LOGS:

@@ -10,3 +10,6 @@ data/profile/
 
 # critic/QA screenshots dropped in the repo root
 /*.png
+
+# local presentation (not tracked)
+/presentation/
