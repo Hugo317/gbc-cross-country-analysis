@@ -89,3 +89,7 @@ input.dash-dropdown-focus-target { position: absolute !important; width: 1px !im
 html, body { overflow-x: hidden; }
 .form-check-input:not(:checked) { background-color: transparent; border-color: var(--muted); }
 .form-check-input:not(:checked) { background-color: transparent; border-color: var(--muted); }
+input.dash-options-list-option-checkbox { appearance: none; -webkit-appearance: none; width: 14px; height: 14px; border: 1.5px solid var(--muted); border-radius: 3px; background: transparent; flex: none; }
+input.dash-options-list-option-checkbox:checked { background: var(--red-hi); border-color: var(--red-hi); }
+input.dash-options-list-option-checkbox { appearance: none; -webkit-appearance: none; width: 14px; height: 14px; border: 1.5px solid var(--muted); border-radius: 3px; background: transparent; flex: none; }
+input.dash-options-list-option-checkbox:checked { background: var(--red-hi); border-color: var(--red-hi); }
