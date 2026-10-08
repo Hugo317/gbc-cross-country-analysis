@@ -48,14 +48,14 @@ EXPLORATORY = {"H1", "H2", "H3", "H5", "H13"}    # suggested by exploratory scan
 VERDICT_COLOR = {"supported": REDHI, "contradicted": AMBER, "not supported": "#6b6b74"}
 FEATS = X["feat_cols"]
 pretty = lambda s: s.replace("_", " ")
-LABELS = {"gdp_per_capita_ppp": "GDP per person (PPP)", "gdp_usd": "Size of the economy (GDP, US$)", "gdp_growth": "GDP growth", "inflation": "Inflation",
+LABELS = {"gdp_per_capita_ppp": "GDP per person (PPP)", "gdp_usd": "Size of the economy (GDP, US$)", "gdp_growth": "GDP growth (%)", "inflation": "Inflation (%)",
           "manufacturing_share": "Manufacturing share of the economy", "services_share": "Services share of the economy", "trade_gdp": "Trade openness (trade as % of GDP)",
-          "fdi_gdp": "Foreign investment (% of GDP)", "hightech_exports": "High-tech exports", "private_credit_gdp": "Bank credit to businesses and households (% of GDP)",
-          "tax_revenue_gdp": "Tax revenue (% of GDP)", "gov_debt_gdp": "Government debt (% of GDP)", "current_account_gdp": "Current account (% of GDP)", "unemployment": "Unemployment",
-          "youth_unemployment": "Youth unemployment", "labour_participation": "Share of people working or looking for work", "self_employed": "Self-employed share", "population": "Population",
-          "pop_working_age": "Working-age share of population", "pop_65plus": "Share of population aged 65+", "urban_share": "Share living in cities", "life_expectancy": "Life expectancy",
+          "fdi_gdp": "Foreign investment (% of GDP)", "hightech_exports": "High-tech exports (% of manufactured exports)", "private_credit_gdp": "Bank credit to businesses and households (% of GDP)",
+          "tax_revenue_gdp": "Tax revenue (% of GDP)", "gov_debt_gdp": "Government debt (% of GDP)", "current_account_gdp": "Current account (% of GDP)", "unemployment": "Unemployment (% of labour force)",
+          "youth_unemployment": "Youth unemployment (% of young labour force)", "labour_participation": "Share of people working or looking for work", "self_employed": "Self-employed share", "population": "Population",
+          "pop_working_age": "Working-age share of population", "pop_65plus": "Share of population aged 65+", "urban_share": "Share living in cities", "life_expectancy": "Life expectancy (years)",
           "gini": "Income inequality (Gini)", "tertiary_enrolment": "University enrolment", "education_spend_gdp": "Education spending (% of GDP)", "rd_gdp": "Research spending (% of GDP)",
-          "patents_residents": "Patents filed by residents", "internet_users": "Internet users", "mobile_subscriptions": "Mobile phone subscriptions", "gov_effectiveness": "Government effectiveness",
+          "patents_residents": "Patents filed by residents", "internet_users": "Internet users (% of population)", "mobile_subscriptions": "Mobile phone subscriptions", "gov_effectiveness": "Government effectiveness",
           "regulatory_quality": "Regulatory quality", "rule_of_law": "Rule of law", "corruption_control": "Control of corruption", "voice_accountability": "Voice and accountability",
           "political_stability": "Political stability", "dev_index": "Development index", "inst_index": "Institutions index"}
 LOGS = {"population", "gdp_usd", "patents_residents"}                   # stored as natural logs in the extract
@@ -221,6 +221,8 @@ def fm(x, d=1):
 
 
 def fix_minus(t):
+    t = re.sub(r"([pq]) = 0\.0{3,5}\b", r"\1 < 0.001", t)
+    t = t.replace("−0.000", "0.000")
     return re.sub(r"(?<![\w.])-(?=\d)", MINUS, t)
 
 
@@ -290,8 +292,9 @@ def evidence_fig():
     d = pd.DataFrame({"h": ids, "label": [f'{h} · {SHORT.get(h, HYP[h]["title"][:24])}' for h in ids], "strength": [-np.log10(max(HYP[h]["p_primary"], 1e-9)) for h in ids],
                       "verdict": [HYP[h]["verdict"] for h in ids]})
     d = d.sort_values("strength", ascending=False)
-    fig = px.bar(d, x="strength", y="label", orientation="h", color="verdict", color_discrete_map=VERDICT_COLOR, template=TPL,
+    fig = px.bar(d, x="strength", y="label", custom_data=["verdict"], orientation="h", color="verdict", color_discrete_map=VERDICT_COLOR, template=TPL,
                  labels={"strength": "evidence strength", "label": ""})
+    fig.update_traces(hovertemplate="<b>%{y}</b><br>evidence strength %{x:.1f} (%{customdata[0]})<extra></extra>")
     fig.add_vline(x=-np.log10(0.05), line_dash="dot", line_color=MUTED)
     fig.add_annotation(x=-np.log10(0.05), y=1.0, yref="paper", text="conventional threshold", showarrow=False, yshift=12, font=dict(color=MUTED, size=11), xanchor="left")
     fig.update_layout(margin=dict(l=10, r=10, t=34, b=60), showlegend=False, yaxis_autorange="reversed")
@@ -305,10 +308,10 @@ def rest_table():
     def eff(h):
         r = HYP[h]
         if h in BIGOVER:
-            return BIGOVER[h][0](r)
+            return BIGOVER[h][0](r) + {"H3": " explained", "H4": " R²"}.get(h, "")
         return f'ρ = {sg(r["effect"], 2)}' if r["effect_unit"].startswith("Spearman") else f'{sg(r["effect"], 2)} pp'
     rows = [html.Tr([html.Td(hlink(h)), html.Td(HYP[h]["title"]), html.Td(status_badge(h)[0]), html.Td(eff(h), title=BIGOVER[h][1] if h in BIGOVER else unit(HYP[h]["effect_unit"])),
-                     html.Td("≥ 0.99" if HYP[h]["p_primary"] >= 0.99 else f'{HYP[h]["p_primary"]:.2f}' if HYP[h]["p_primary"] >= 0.01 else f'{HYP[h]["p_primary"]:.1g}')]) for h in REST]
+                     html.Td("≥ 0.99" if HYP[h]["p_primary"] >= 0.99 else (f'{HYP[h]["p_primary"]:.2f}' + (" (q)" if h == "H16" else "")) if HYP[h]["p_primary"] >= 0.01 else f'{HYP[h]["p_primary"]:.1g}')]) for h in REST]
     return html.Div([dbc.Table([head, html.Tbody(rows)], size="sm", responsive=True, className="small text-muted"),
                      html.Small("p: how easily chance alone could produce the result (small = unlikely to be chance). A large p such as ≥ 0.99 means chance explains it easily; for H7 it tests whether predictions improved, and they did not.", className="text-muted")])
 
@@ -323,6 +326,7 @@ def hero_card():
     xs = np.linspace(d.dev_index.min(), d.dev_index.max(), 20)
     fig.add_trace(go.Scatter(x=xs, y=np.polyval(b, xs), mode="lines", line=dict(color=MUTED, dash="dash"), showlegend=False, hoverinfo="skip"))
     fig.update_traces(textposition="top center", textfont=dict(size=10, color=TEXT), marker=dict(size=9, opacity=.9), selector=dict(mode="markers+text"))
+    fig.update_traces(hovertemplate="<b>%{hovertext}</b><br>Development index: %{x:.2f}<br>Average ROA: %{y:.1f}%<extra></extra>", selector=dict(mode="markers+text"))
     fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
     fig.update_xaxes(title_standoff=14)
     fig.update_yaxes(title_standoff=14)
@@ -364,11 +368,13 @@ layout_overview = html.Div([
 _se = pd.DataFrame(X["size_effects"])
 _size_fig = px.bar(_se, x="size", y="coef", error_y=_se.hi - _se.coef, error_y_minus=_se.coef - _se.lo, template=TPL, color_discrete_sequence=[REDHI],
                    labels={"coef": "ROA change (points)", "size": "company size within its country"})
+_size_fig.update_traces(hovertemplate="<b>%{x} firms</b>: %{y:.1f} points of ROA<extra></extra>")
 _size_fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
 _size_fig.update_xaxes(title_standoff=14)
 _g = X["grid"]
 _heat = px.imshow(pd.DataFrame(_g["data"], index=_g["index"], columns=_g["columns"]), text_auto=".1f", color_continuous_scale=RED_SCALE, aspect="auto", template=TPL,
                   labels={"x": "country development", "y": "company size"})
+_heat.update_traces(hovertemplate="<b>%{y} firms, %{x} countries</b><br>typical ROA %{z:.1f}%<extra></extra>")
 _heat.update_layout(margin=dict(l=10, r=10, t=10, b=10), coloraxis_showscale=False)
 
 
@@ -440,14 +446,15 @@ def hyp_page(h):
         tags.append(dbc.Badge("confirmed on 2nd data source", className="me-2 bg-ash"))
     own_unit = not r["effect_unit"].startswith("Spearman")
     rep_txt = None
-    later = [n for n in r["notes"] if n.startswith("Replication on 2023")]
+    later = [n for n in r["notes"] if "Replication on 2023" in n]
     if own_unit and rep is not None and not pd.isna(rep) and later:
         rep_txt = f"A check on the later years only (2023–2024, the same firms, so not independent) gives {sg(rep, 2)}."
     elif own_unit and rep is not None and not pd.isna(rep):
         rep_txt = f'The second data source (official ESEF filings) gives {nf(h, rep)}' + \
                   ((", pointing the same way." if sign(rep) == sign(r["effect"]) else ", pointing the other way.") if r["verdict"] != "not supported"
                    else (", with the same sign." if sign(rep) == sign(r["effect"]) else ", with the opposite sign.")) + \
-                  (" Both sources show the same pattern, which is the opposite of what we expected." if r["verdict"] == "contradicted" and sign(rep) == sign(r["effect"]) else "")
+                  (" Both sources show the same pattern, which is the opposite of what we expected." if r["verdict"] == "contradicted" and sign(rep) == sign(r["effect"]) else "") + \
+                  (f' On its own the second-source result is statistically significant (p = {r["replication_p"]:.3f}) but points the other way from the main estimate, so we do not read it as a finding.' if r["verdict"] == "not supported" and r.get("replication_p") is not None and not pd.isna(r["replication_p"]) and r["replication_p"] < 0.05 and sign(rep) != sign(r["effect"]) and "Replication on 2023" not in " ".join(r["notes"]) else "")
     elif own_unit and h not in NOT_A_TEST:
         rep_txt = "This idea could not be re-tested on a second data source."
     fig = range_fig(r)
@@ -469,6 +476,7 @@ def hyp_page(h):
         xs = np.linspace(d.dev_index.min(), d.dev_index.max(), 20)
         f.add_trace(go.Scatter(x=xs, y=np.polyval(b, xs), mode="lines", line=dict(color=MUTED, dash="dash"), showlegend=False, hoverinfo="skip"))
         f.update_traces(textposition="top center", textfont=dict(size=10, color=TEXT), selector=dict(mode="markers+text"))
+        f.update_traces(hovertemplate="<b>%{hovertext}</b><br>Development index: %{x:.2f}<br>Average ROA: %{y:.1f}%<extra></extra>", selector=dict(mode="markers+text"))
         f.update_layout(margin=dict(l=10, r=10, t=10, b=10))
         f.update_xaxes(title_standoff=14)
         f.update_yaxes(title_standoff=14)
@@ -484,6 +492,7 @@ def hyp_page(h):
         f = px.scatter(d.reset_index(), x="inst_index", y="loss", text="lab", hover_name="name", template=TPL, color_discrete_sequence=[AMBER],
                        labels={"inst_index": "institutions index (SD)", "loss": "share of loss-making company-years (%)"})
         f.update_traces(textposition="top center", textfont=dict(size=10, color=TEXT), selector=dict(mode="markers+text"))
+        f.update_traces(hovertemplate="<b>%{hovertext}</b><br>Institutions index: %{x:.2f}<br>Loss-making company-years: %{y:.1f}%<extra></extra>", selector=dict(mode="markers+text"))
         f.update_layout(margin=dict(l=10, r=10, t=10, b=10))
         f.update_xaxes(title_standoff=14)
         f.update_yaxes(title_standoff=14)
@@ -513,7 +522,7 @@ def hyp_page(h):
         *extra,
         html.H5("Keep in mind", className="mt-4"), html.Ul([html.Li(c) for c in caveats]),
         dbc.Accordion([dbc.AccordionItem([html.P(f'Estimate {fm(r["effect"], 3)} {r["effect_unit"]}; 95% CI {ci(r)}; {"adjusted p (q)" if h == "H16" else "p"} {fmtp(r["p_primary"])} ({r["p_method"]}); {sample_txt(r)}.' +
-                                                 ("" if h in NOT_A_TEST or h not in Q.index else f' q = {Q[h]:.3f} (Benjamini–Hochberg across 15 tests).'), className="small"),
+                                                 ("" if h in NOT_A_TEST or h not in Q.index else f' q across all 15 tests = {Q[h]:.3f} (Benjamini–Hochberg).'), className="small"),
                                           html.Ul([html.Li(fix_minus(n)) for n in r["notes"]], className="small"),
                                           html.P('In these notes, "same direction" and "opposite direction" refer to the sign we expected in advance, not to the main estimate.', className="small text-muted") if any("direction" in n for n in r["notes"]) else html.Div(),
                                           html.P("The by-size numbers in these notes come from a slightly different model than the bar chart on this page (about −2.0 vs −1.7 for small firms); the pattern is the same.", className="small text-muted") if h == "H13" else html.Div()], title="Technical details")], start_collapsed=True, className="mt-3"),
@@ -699,7 +708,7 @@ layout_method = html.Div([
             html.Li("Method: country conditions from the year before vs company ROA, with errors grouped by country; a re-sampling method (wild cluster bootstrap) that suits few countries; a correction for testing many ideas (Benjamini–Hochberg); replication on ESEF."),
             html.Li("Countries dropped for lack of company data: Bulgaria, Croatia, Cyprus, Slovenia, Slovakia, and Malta (1 firm).")]), title="What was built"),
         dbc.AccordionItem(html.Ul([
-            html.Li("Thin company samples (fewer than 50 firms) for Estonia, Latvia, Lithuania, Czechia and Ireland: markets too small."),
+            html.Li("Thin company samples (often fewer than 50 firms) in smaller markets such as Estonia, Latvia, Lithuania, Czechia, Hungary and Ireland. The Company level tab leaves out the 6 countries with fewer than 30 listed companies."),
             html.Li("Listed firms only; Yahoo is unofficial and skewed towards some sectors; ESEF has no sector."),
             html.Li("34 countries limit what can be separated: development, institutions and openness move together."),
             html.Li("H1, H2, H3, H5 and H13 were suggested by looking at the same data; treat as exploratory."),
@@ -825,10 +834,13 @@ def country_view(names, theme, sector, years):
     z = Z.loc[iso, cols].T.dropna(how="all")
     z.columns = names
     z = z.sort_values(names[0])
-    bars = px.bar(z.reset_index().melt(id_vars="index", var_name="country", value_name="sd"), x="sd", y="index", color="country", orientation="h", barmode="group", template=TPL,
+    zm = z.reset_index().melt(id_vars="index", var_name="country", value_name="sd")
+    zm["label"] = zm["index"].map(nice)
+    bars = px.bar(zm, x="sd", y="index", custom_data=["label"], color="country", orientation="h", barmode="group", template=TPL,
                   labels={"sd": "SD from the 34-country average", "index": ""}, color_discrete_map=cmap, category_orders={"country": names})
     h = max(380, 22 * len(z) * len(names)) + 90
     bars.update_layout(height=h, margin=dict(l=0, r=0, t=10, b=90), yaxis_title=None, legend=dict(orientation="h", y=-0.1 if h > 600 else -0.2, title=None))
+    bars.update_traces(hovertemplate="<b>%{fullData.name}</b><br>%{customdata[0]}: %{x:.2f} SD from the 34-country average<extra></extra>")
     bars.update_xaxes(title_standoff=14)
     bars.update_yaxes(tickvals=list(z.index), ticktext=[nice(i) for i in z.index])
     f = firm_slice(sector, tuple(years))
@@ -836,6 +848,7 @@ def country_view(names, theme, sector, years):
     f["country"] = f.iso3.map(dict(zip(iso, names)))
     roa = px.line(f, x="fiscal_year", y="median", color="country", markers=True, hover_data=["count"], template=TPL, labels={"median": "median ROA (%)", "fiscal_year": ""},
                   color_discrete_map=cmap, category_orders={"country": names})
+    roa.update_traces(hovertemplate="<b>%{fullData.name}</b> %{x}<br>median ROA %{y:.1f}% (%{customdata[0]} firms)<extra></extra>")
     roa.update_layout(margin=dict(l=10, r=10, t=10, b=10), legend=dict(title=None))
     roa.update_xaxes(dtick=1)
     roa.update_yaxes(title_standoff=14)
