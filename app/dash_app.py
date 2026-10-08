@@ -41,7 +41,7 @@ X = json.loads((DATA / "extra.json").read_text())
 HYP = {p.stem: json.loads(p.read_text()) for p in sorted((DATA / "results").glob("H*.json"), key=lambda p: int(p.stem[1:]))}
 NOT_A_TEST = {"H11", "H15"}                      # robustness / data-quality entries, outside the multiple-testing family
 Q = pd.Series(X["q"])
-N_PASS = int((Q < 0.10).sum())
+N_PASS = int(sum(1 for h in Q.index if Q[h] < 0.10 and HYP[h]["verdict"] == "supported"))
 EXPLORATORY = {"H1", "H2", "H3", "H5", "H13"}    # suggested by exploratory scans of the same data
 VERDICT_COLOR = {"supported": REDHI, "contradicted": AMBER, "not supported": "#6b6b74"}
 FEATS = X["feat_cols"]
@@ -108,6 +108,8 @@ def with_labels(d, x, y, k=10):
 
 def sample_txt(r):
     """n counts countries for the country-level tests and company-years for the firm-level ones."""
+    if r["id"] == "H15":
+        return f'{r["n"]:,} matched company-years (484 companies in 18 countries)'
     if r["effect_unit"].startswith("Spearman"):
         return f'n = {r["n"]} countries'
     return f'n = {r["n"]:,} company-years in {r["clusters"]} countries'
@@ -159,16 +161,18 @@ PLAIN = {
     "H0": "Across 34 countries, companies in richer, more developed countries tend to earn a bit less profit for every euro of assets they own. Each step up the development "
           "scale goes with about 1.1 percentage points lower return on assets. A second, independent data source shows the same pattern, and it survives removing any single "
           "country. It is a pattern, not proof of cause: it could reflect tougher competition, higher costs, or the kinds of companies that are listed.",
-    "H13": "The pattern is not the same for everyone. Small companies carry it: for them, a more developed country goes with about 2 points lower ROA. For the largest third of "
+    "H13": "The pattern is not the same for everyone. Small companies carry it: for them, a more developed country goes with close to 2 points lower ROA (1.7 to 2.0 depending on the exact method). For the largest third of "
            "companies the effect is close to zero. We noticed this while exploring the data, so treat it as a strong lead rather than a settled fact.",
     "H11": "This is a stress test of the main finding. We re-ran it 34 times, each time leaving out one country, and with other ways of measuring development. The result stayed "
            "negative every time. The weakest case (dropping India) is still about −0.9 points. So the main finding does not depend on one or two unusual countries.",
     "H5": "Countries where banks lend more to businesses and households also tend to have bigger stock markets. The pattern is strong across the 20 countries with data (a match of "
-          "+0.77, where +1 would be perfect) and stays strong once we account for how rich each country is. It came from exploring the same data, so it is labelled exploratory.",
+          "+0.77, where +1 would be perfect) and stays strong once we account for how rich each country is. One related check, on how many new businesses start, did not confirm a link "
+          "(−0.31, not significant). The result came from exploring the same data, so it is labelled exploratory.",
     "H6": "Inside the EU, countries where an hour of work costs more also produce more value per worker (a match of +0.90). Roughly, a 10% higher labour cost goes with about 8.7% "
           "higher output per worker. That fits the idea that expensive labour is paid for by higher productivity.",
-    "H1": "We expected stronger institutions (rule of law, effective government) to go with fewer loss-making companies. The data show the opposite. But the effect disappears once "
-          "we account for how open to trade, and how small, each economy is: small open economies drive it. So it is not a real effect of institutions.",
+    "H1": "We expected stronger institutions (rule of law, effective government) to go with fewer loss-making companies. The data show the opposite: about 3 points more chance of a "
+          "loss per step up in institutions. But that pattern is driven by small, open economies. Once we account for how open to trade and how big each economy is, it shrinks to about zero. "
+          "So read it as a warning about confusing patterns, not as a real effect of institutions.",
     "H15": "This is a data check, not a finding about countries. We compared Yahoo Finance profit figures with the officially filed accounts (ESEF) for the same companies and years. "
            "They match almost perfectly, so the Yahoo numbers can be trusted. The flip side: for the 484 companies in both sources, the second source is not an independent confirmation.",
 }
@@ -225,7 +229,7 @@ def evidence_fig():
     d = pd.DataFrame({"h": ids, "label": [f'{h} · {SHORT.get(h, HYP[h]["title"][:24])}' for h in ids], "strength": [-np.log10(max(HYP[h]["p_primary"], 1e-9)) for h in ids],
                       "verdict": [HYP[h]["verdict"] for h in ids]})
     fig = px.bar(d, x="strength", y="label", orientation="h", color="verdict", color_discrete_map=VERDICT_COLOR, template=TPL,
-                 labels={"strength": "strength of evidence (longer bar = harder to explain by chance)", "label": ""})
+                 labels={"strength": "strength of evidence (longer = stronger)", "label": ""})
     fig.add_vline(x=-np.log10(0.05), line_dash="dot", line_color=MUTED)
     fig.add_annotation(x=-np.log10(0.05), y=1.0, yref="paper", text="conventional threshold", showarrow=False, yshift=12, font=dict(color=MUTED, size=11), xanchor="left")
     fig.update_layout(margin=dict(l=10, r=10, t=34, b=60), showlegend=False, yaxis_autorange="reversed")
@@ -235,7 +239,8 @@ def evidence_fig():
 
 def rest_table():
     head = html.Thead(html.Tr([html.Th(x) for x in ["", "Question", "What was measured", "Effect", "Chance (p)"]]))
-    unit = lambda u: u.replace("pp", "points").replace(" SD", " standard deviation")
+    unit = lambda u: (u.replace("pp", "points").replace(" SD", " standard deviation").replace("MAE gain", "gain in prediction accuracy").replace("extra adjusted R²", "extra share of variation explained")
+                      .replace("Spearman ρ", "match (ρ)"))
     rows = [html.Tr([html.Td(hlink(h)), html.Td(HYP[h]["title"]), html.Td(unit(HYP[h]["effect_unit"])), html.Td(sg(HYP[h]["effect"], 2)),
                      html.Td("≥ 0.99" if HYP[h]["p_primary"] >= 0.99 else f'{HYP[h]["p_primary"]:.2g}')]) for h in REST]
     return dbc.Table([head, html.Tbody(rows)], size="sm", responsive=True, className="small text-muted")
@@ -268,7 +273,7 @@ layout_overview = html.Div([
              dbc.Col(xs=6, md=True, children=kpi("Companies", f'{X["n_companies"]:,}', "listed, Yahoo Finance")),
              dbc.Col(xs=6, md=True, children=kpi("Company-years", f'{X["n_firm_years"]:,}', f"mostly {WINDOW}")),
              dbc.Col(xs=6, md=True, children=kpi("Country indicators", f"{len(FEATS)}", "World Bank, WGI, IMF, Eurostat")),
-             dbc.Col(xs=6, md=True, children=kpi("Findings that hold", f"{N_PASS}", f"of {len(Q)} tests (17 ideas, 2 are data checks)"))], className="g-3 mb-4"),
+             dbc.Col(xs=6, md=True, children=kpi("Findings that hold", f"{N_PASS}", f"of {len(Q)} tests; 1 more passed but is explained away (H1)"))], className="g-3 mb-4"),
     dbc.Alert([html.B("Question: "), "how do the social and economic conditions of a country relate to the performance of the companies that operate there? ",
                "Click an H-number on any finding to read the full story."], className="alert-quest"),
     glossary(),
@@ -304,34 +309,69 @@ def range_fig(r):
     lo, hi, e = r["ci_low"], r["ci_high"], r["effect"]
     if lo is None or hi is None or pd.isna(lo) or pd.isna(hi):
         return None
+    width = max(hi - lo, 1e-9)
+    show_zero = min(abs(lo), abs(hi)) <= 3 * width or lo <= 0 <= hi          # zoom on the range when zero is far away (e.g. a correlation of +0.99)
     fig = go.Figure(go.Scatter(x=[e], y=[""], mode="markers", marker=dict(size=14, color=REDHI), error_x=dict(type="data", symmetric=False, array=[hi - e], arrayminus=[e - lo], color=REDHI, thickness=4, width=10),
                                hovertemplate=f"estimate {sg(e, 2)}<br>range {sg(lo, 2)} to {sg(hi, 2)}<extra></extra>"), layout=dict(template=TPL))
-    pad = (max(hi, 0) - min(lo, 0)) * 0.12
-    fig.add_vline(x=0, line_color=MUTED, line_dash="dot")
-    fig.add_annotation(x=0, y=1.0, yref="paper", text="no effect", showarrow=False, yshift=12, font=dict(color=MUTED, size=11), xanchor="left")
-    fig.update_xaxes(range=[min(lo, 0) - pad, max(hi, 0) + pad], title="effect (dot) and the range we are 95% sure it lies in (line)", title_standoff=12)
+    lo_a, hi_a = (min(lo, 0), max(hi, 0)) if show_zero else (lo, hi)
+    pad = (hi_a - lo_a) * 0.15 + 1e-9
+    if show_zero:
+        fig.add_vline(x=0, line_color=MUTED, line_dash="dot")
+        fig.add_annotation(x=0, y=1.0, yref="paper", text="no effect", showarrow=False, yshift=12, font=dict(color=MUTED, size=11), xanchor="left")
+    fig.update_xaxes(range=[lo_a - pad, hi_a + pad], title="estimate (dot) and 95% range (line)", title_standoff=12)
     fig.update_yaxes(visible=False)
     fig.update_layout(margin=dict(l=10, r=10, t=30, b=50), showlegend=False)
     return fig
 
 
+def sign(x):
+    return (x > 0) - (x < 0)
+
+
+def plain_text(h, r):
+    if h in PLAIN:
+        return PLAIN[h]
+    e, lo, hi, ex = r["effect"], r["ci_low"], r["ci_high"], r.get("expected_sign", 0)
+    unit = r["effect_unit"].replace("+1 pp", "+1 percentage point").replace("pp", "points").replace(" SD", " standard deviation")
+    t = f'We tested the idea: "{r["statement"]}" The data do not back it up. '
+    if lo is not None and hi is not None and not pd.isna(lo) and lo <= 0 <= hi:
+        t += f"The best estimate is {sg(e, 2)} ({unit}), but the plausible range ({sg(lo, 2)} to {sg(hi, 2)}) includes zero, so we cannot tell it apart from no effect. "
+    elif ex and sign(e) != ex:
+        t += f"The estimate ({sg(e, 2)}) even points the opposite way to what we expected. "
+    else:
+        t += f"The best estimate is {sg(e, 2)} ({unit}), which is too weak or too uncertain to count as a finding. "
+    return t + "Read this as 'no clear evidence', not as proof that there is no link."
+
+
 def hyp_page(h):
     r = HYP[h]
-    headline = FDICT[h][1] if h in FDICT else r["statement"]
+    ok = r["verdict"] == "supported"
+    headline = FDICT[h][1] if h in FDICT else f'Idea tested: {r["statement"]}'
     big = FDICT[h][2](r) if h in FDICT else (f'ρ = {sg(r["effect"], 2)}' if r["effect_unit"].startswith("Spearman") else f'{sg(r["effect"], 2)} pp')
-    unit = (FDICT[h][3] if h in FDICT else r["effect_unit"].replace("pp", "points").replace(" SD", " standard deviation"))
-    warn = r["verdict"] != "supported"
-    tags = [dbc.Badge(VERDICT_TEXT.get(r["verdict"], r["verdict"]), className="me-2 " + ("bg-amber" if r["verdict"] == "contradicted" else "bg-ash" if warn else "bg-red"))]
+    unit = (FDICT[h][3] if h in FDICT else r["effect_unit"].replace("+1 pp", "+1 percentage point").replace("pp", "points").replace(" SD", " standard deviation"))
+    badge_text = "Check passed" if h in NOT_A_TEST and ok else VERDICT_TEXT.get(r["verdict"], r["verdict"])
+    tags = [dbc.Badge(badge_text, className="me-2 " + ("bg-amber" if r["verdict"] == "contradicted" else "bg-red" if ok else "bg-ash"))]
     if h in EXPLORATORY:
         tags.append(dbc.Badge("exploratory", color="warning", text_color="dark", className="me-2"))
     if h in NOT_A_TEST:
         tags.append(dbc.Badge("check, not a new claim", color="secondary", className="me-2"))
     rep = r.get("replication_coef")
-    if rep is None or pd.isna(rep):
+    own_unit = not r["effect_unit"].startswith("Spearman")
+    rep_txt = None
+    if own_unit and rep is not None and not pd.isna(rep):
+        rep_txt = f'The second data source (official ESEF filings) gives {sg(rep, 2)}, pointing the {"same" if sign(rep) == sign(r["effect"]) else "opposite"} way.'
+    elif own_unit and h not in NOT_A_TEST:
         rep_txt = "This idea could not be re-tested on a second data source."
-    else:
-        rep_txt = f'The second data source (ESEF filings) gives {sg(rep, 2)}, in the {"same" if r["replication_same_sign"] else "opposite"} direction.'
     fig = range_fig(r)
+    robust = r.get("robust_share")
+    bullets = [html.Li(f'Our best estimate is {sg(r["effect"], 2)}. A reasonable range for the true value is {ci(r)}.' if fig is not None else "No range could be computed for this one.")]
+    if ok and robust is not None and not pd.isna(robust):
+        bullets.append(html.Li(f"It held in {robust:.0%} of the alternative ways we cut the data."))
+    if h == "H1":
+        bullets.append(html.Li("But once trade openness and population size are accounted for, the effect shrinks to about zero (+0.12, p = 0.93). That is why we call it a surprise rather than a finding."))
+    if rep_txt:
+        bullets.append(html.Li(rep_txt))
+    bullets.append(html.Li(f'Basis: {sample_txt(r)}.'))
     extra = []
     if h == "H0":
         d = with_labels(country, "dev_index", "roa", 12)
@@ -360,30 +400,32 @@ def hyp_page(h):
         f.update_xaxes(title_standoff=14)
         f.update_yaxes(title_standoff=14)
         extra = [html.H5("The surprising pattern", className="mt-4"), graph(f, h=380), cap("Each dot is a country. Further right = stronger institutions; higher up = more loss-making companies.")]
-    caveats = ["This shows an association, not a cause."]
+    caveats = [] if h == "H15" else ["This shows an association, not a cause."]
     if h in EXPLORATORY:
         caveats.append("It was suggested by looking at the same data, so it is a lead rather than proof.")
     if h in NOT_A_TEST:
-        caveats.append("It is a robustness or data-quality check, so it sits outside the multiple-testing correction.")
-    if r["effect_unit"].startswith("Spearman"):
+        caveats.append("It is a stress test or data check of an earlier finding, so it is not counted among the 15 tests that are corrected for multiple testing.")
+    if r["effect_unit"].startswith("Spearman") and h != "H15":
         caveats.append(f'It is based on {r["n"]} countries, so it is a country-level pattern, not a company-level one.')
-    pos = [x for x in HYP if HNUM(x) == HNUM(h) - 1] + [x for x in HYP if HNUM(x) == HNUM(h) + 1]
+    if h == "H15":
+        caveats.append("Because the two sources agree this closely, results confirmed on ESEF are not independent for the 484 companies that appear in both.")
     return html.Div([
         dcc.Link("← Back to all findings", href="/", className="more-link"),
         html.Div([html.Small(f'{h} · {r["title"]}', className="text-muted d-block mt-3"), html.H2(headline, className="mt-1"), html.Div(tags, className="mb-3")]),
-        dbc.Row([dbc.Col(dbc.Card(dbc.CardBody([html.Small("The number", className="text-muted"), html.H1(big, className="big warn" if warn and r["verdict"] == "contradicted" else "big"),
-                                                html.Small(unit, className="text-muted")]), className="finding h-100" + (" warn" if r["verdict"] == "contradicted" else "")), md=4),
-                 dbc.Col(dbc.Card(dbc.CardBody([html.H5("In plain words"), html.P(PLAIN.get(h, r["statement"]), className="mb-0")]), className="h-100"), md=8)], className="g-3 mb-4"),
+        dbc.Row([dbc.Col(dbc.Card(dbc.CardBody([html.Small("The number", className="text-muted"),
+                                                html.H1(big, className="big" + (" warn" if r["verdict"] == "contradicted" else "" if ok else " mute")), html.Small(unit, className="text-muted")]),
+                                  className="finding h-100" + (" warn" if r["verdict"] == "contradicted" else "")), md=4),
+                 dbc.Col(dbc.Card(dbc.CardBody([html.H5("In plain words"), html.P(plain_text(h, r), className="mb-0")]), className="h-100"), md=8)], className="g-3 mb-4"),
         html.H5("How sure are we?"),
-        html.Ul([html.Li(f'Our best estimate is {sg(r["effect"], 2)}, and we are 95% sure the true value lies between {ci(r)}.' if fig is not None else "No range could be computed for this one."),
-                 html.Li(f'It held in {r["robust_share"]:.0%} of the alternative ways we cut the data.' if r.get("robust_share") is not None and not pd.isna(r["robust_share"]) else "Robustness was not summarised for this one."),
-                 html.Li(rep_txt), html.Li(f'Basis: {sample_txt(r)}.')]),
+        html.Ul(bullets),
         graph(fig, h=170) if fig is not None else html.Div(),
+        cap("If the line crosses the dotted 'no effect' mark, the true effect could be zero.") if fig is not None and fig.layout.annotations else html.Div(),
         *extra,
         html.H5("Keep in mind", className="mt-4"), html.Ul([html.Li(c) for c in caveats]),
         dbc.Accordion([dbc.AccordionItem([html.P(f'Estimate {r["effect"]:.3f} {r["effect_unit"]}; 95% CI {ci(r)}; p = {r["p_primary"]:.3g} ({r["p_method"]}); {sample_txt(r)}.' +
                                                  ("" if h in NOT_A_TEST or h not in Q.index else f' q = {Q[h]:.3f} (Benjamini–Hochberg across 15 tests).'), className="small"),
                                           html.Ul([html.Li(n) for n in r["notes"]], className="small")], title="Technical details")], start_collapsed=True, className="mt-3"),
+        glossary(),
         html.Small(f'Full analysis in notebook {r["notebook"]}', className="text-muted d-block mt-3"),
     ])
 
@@ -500,7 +542,7 @@ layout_company = html.Div([
     stats_toggle(f'Equity ratio: pooled {sg(W1S["mean"] * 0.1, 2)} pp (95% range {sg(W1S["ci_low"] * 0.1, 2)} to {sg(W1S["ci_high"] * 0.1, 2)}), p = {W1S["p"]:.2g}; '
                  f'{W1S["significant_same_sign"]} countries individually significant in the same direction, {W1S["significant_opposite"]} in the opposite one; still {W1S["loo_agreement"]:.0%} same-direction when any one country is dropped.',
                  f'Size: pooled {sg(W2S["mean"], 2)} pp (95% range {sg(W2S["ci_low"], 2)} to {sg(W2S["ci_high"], 2)}), p = {W2S["p"]:.2g}; {W2S["significant_same_sign"]} countries significant in the pooled direction, {W2S["significant_opposite"]} in the opposite one.'),
-    html.Small("An equity ratio can also be high because the company has been profitable (retained earnings), so this is an association, not proof that equity financing raises returns.", className="text-muted d-block mt-2"),
+    html.Small(id="w-caveat", className="text-muted d-block mt-2"),
     html.Hr(),
     html.H5("2 · The sector pecking order is the same everywhere"),
     html.P(f'Each country\'s ranking of sectors by ROA matches the average of the other countries (match {sg(SEC["agreement"], 2)} on a −1 to +1 scale, positive in {SEC["agreement_positive"]} of {SEC["agreement_n"]} countries). '
@@ -566,7 +608,7 @@ layout_method = html.Div([
             html.Li("Listed firms only; Yahoo is unofficial and skewed towards some sectors; ESEF has no sector."),
             html.Li("34 countries limit what can be separated: development, institutions and openness move together."),
             html.Li("H1, H2, H3, H5 and H13 were suggested by looking at the same data; treat as exploratory."),
-            html.Li("Company-level tab (notebooks 2.1, 3.1): the equity-ratio and sector results are associations between companies inside countries; both traits were checked on the same data before the notebook was finalised, so they sit outside the 15-test correction. Plain company-level t-tests between country groups are badly over-confident (about 65% of random splits look significant), which is why the comparisons use country-level inference."),
+            html.Li("Company-level tab (notebooks 2.1, 3.1): the equity-ratio and sector results are associations between companies inside countries; both traits were checked on the same data before the notebook was finalised, so they sit outside the 15-test correction. Simple comparisons of company averages between country groups are badly over-confident (about 65% of random splits look significant), which is why the comparisons use country-level inference."),
             html.Li("Yahoo and ESEF agree almost perfectly (H15), so ESEF replications are not independent for the companies in both sources."),
             html.Li(f"Company accounts cover {WINDOW} in practice (a few earlier and later filings exist but are too few to use on their own). Eurostat business statistics change definition between 2020 and 2021 (levels jump about 33%), so those tables are kept as separate series and used from 2021 onward only.")]), title="Caveats"),
         dbc.AccordionItem([html.P("Click any question to read its page.", className="text-muted small"), hyp_index()], title="Every hypothesis in detail"),
@@ -612,7 +654,7 @@ def apply_preset(_):
 def scatter(x, y, colour, sector):
     d = country_stats(sector).dropna(subset=[x, y])
     d = with_labels(d, x, y, 12)
-    fig = px.scatter(d, x=x, y=y, color=colour, text="lab", hover_name="name", size="firms", size_max=28, template=TPL, hover_data={"firms": True, "iso2": False, "lab": False},
+    fig = px.scatter(d, x=x, y=y, color=colour, text="lab", hover_name="name", size="firms", size_max=20, template=TPL, hover_data={"firms": True, "iso2": False, "lab": False},
                      color_discrete_sequence=DISTINCT)
     if len(d) > 3:
         b = np.polyfit(d[x], d[y], 1)
@@ -659,7 +701,7 @@ def country_view(names, theme, sector, years):
     rows = [(cs if n in set(cs.name) else country)[(cs if n in set(cs.name) else country).name == n].iloc[0] for n in names]
     cmap = dict(zip(names, CC))
     cards = dbc.Row([dbc.Col([html.H5(r["name"], className="mb-2", style={"borderLeft": f"4px solid {cmap[r['name']]}", "paddingLeft": ".5rem"}), dbc.Row([
-        dbc.Col(xs=6, md=6, lg=True, children=kpi("Firms", f'{int(r.firms)}', "small sample" if r.small_firm_sample else "")), dbc.Col(xs=6, md=6, lg=True, children=kpi("Mean ROA", f"{r.roa:.1f} pp")),
+        dbc.Col(xs=6, md=6, lg=True, children=kpi("Firms", f'{int(r.firms)}', "small sample" if r.small_firm_sample else "")), dbc.Col(xs=6, md=6, lg=True, children=kpi("Mean ROA", f"{r.roa:.1f}%")),
         dbc.Col(xs=6, md=6, lg=True, children=kpi("Development", f"{sg(r.dev_index, 2)} SD")), dbc.Col(xs=6, md=6, lg=True, children=kpi("Institutions", f"{sg(r.inst_index, 2)} SD")),
         dbc.Col(xs=6, md=6, lg=True, children=kpi("Loss-making", f"{r.loss:.0f}%"))],
         className="g-2")], md=12 // len(names)) for r in rows], className="g-3 mb-3")
@@ -685,11 +727,15 @@ def country_view(names, theme, sector, years):
     return cards, bars, {"height": f"{h}px"}, roa
 
 
-@callback(Output("w-title", "children"), Output("w-desc", "children"), Output("w-forest", "figure"), Output("w-note", "children"), Input("w-trait", "value"))
+W_CAVEAT = {"W1": "An equity ratio can also be high because the company has been profitable (retained earnings), so this is an association, not proof that equity financing raises returns.",
+            "W2": "Company size is a rank inside each country. No repeating pattern means other things (sector, age, ownership) matter more than size, not that size never matters."}
+
+
+@callback(Output("w-title", "children"), Output("w-desc", "children"), Output("w-forest", "figure"), Output("w-note", "children"), Output("w-caveat", "children"), Input("w-trait", "value"))
 def w_view(h):
     s = CO["summary"][h]
     k = round(s["same_sign_share"] * s["k"])
-    return W_TEXT[h][0], W_TEXT[h][1], forest_fig(h), f'{k} of {s["k"]} countries have the same direction as the pooled estimate ({s["same_sign_share"]:.0%}).'
+    return W_TEXT[h][0], W_TEXT[h][1], forest_fig(h), f'{k} of {s["k"]} countries have the same direction as the pooled estimate ({s["same_sign_share"]:.0%}).', W_CAVEAT[h]
 
 
 if __name__ == "__main__":
