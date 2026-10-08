@@ -23,6 +23,8 @@ AUTHOR, GITHUB, REPO = "Hugo", "https://github.com/Hugo317", "https://github.com
 BG, CARD, LINE, TEXT, MUTED = "#0b0b0d", "#16161a", "#2b2b31", "#ece9e6", "#9b9aa0"
 BLOOD, RED, REDHI, AMBER = "#7a0c12", "#b0121b", "#e5383b", "#e9a23b"
 CAT = [REDHI, "#d9d4cf", AMBER, "#8d8d96", "#ff8a8d", "#5b5b64", "#b0121b", "#bfa6a0"]
+DISTINCT = [REDHI, "#4cc9f0", AMBER, "#90be6d", "#b388eb", "#e9e4dc", "#2ec4b6", "#ff7eb6"]   # categorical colours that stay apart on a dark background
+CC = [REDHI, "#4cc9f0", AMBER]                                                                  # one fixed colour per selected country, shared by both country charts
 RED_SCALE = [[0, "#1a1114"], [0.5, BLOOD], [1, "#ff4d50"]]
 pio.templates["gbc"] = go.layout.Template(layout=dict(
     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color=TEXT, family="Inter, Segoe UI, sans-serif"),
@@ -44,22 +46,71 @@ EXPLORATORY = {"H1", "H2", "H3", "H5", "H13"}    # suggested by exploratory scan
 VERDICT_COLOR = {"supported": REDHI, "contradicted": AMBER, "not supported": "#6b6b74"}
 FEATS = X["feat_cols"]
 pretty = lambda s: s.replace("_", " ")
-INDICES = {"dev_index": "development index", "inst_index": "institutions index"}
-OUTCOMES = {"roa": "ROA (pp)", "margin": "net margin", "loss": "loss-making firm-years (%)"}
-FEATURE_OPTIONS = [{"label": pretty(f), "value": f} for f in FEATS] + [{"label": v, "value": k} for k, v in INDICES.items()]
+LABELS = {"gdp_per_capita_ppp": "GDP per person (PPP)", "gdp_usd": "Size of the economy (GDP, US$)", "gdp_growth": "GDP growth", "inflation": "Inflation",
+          "manufacturing_share": "Manufacturing share of the economy", "services_share": "Services share of the economy", "trade_gdp": "Trade openness (trade as % of GDP)",
+          "fdi_gdp": "Foreign investment (% of GDP)", "hightech_exports": "High-tech exports", "private_credit_gdp": "Bank credit to businesses and households (% of GDP)",
+          "tax_revenue_gdp": "Tax revenue (% of GDP)", "gov_debt_gdp": "Government debt (% of GDP)", "current_account_gdp": "Current account (% of GDP)", "unemployment": "Unemployment",
+          "youth_unemployment": "Youth unemployment", "labour_participation": "Share of people working or looking for work", "self_employed": "Self-employed share", "population": "Population",
+          "pop_working_age": "Working-age share of population", "pop_65plus": "Share of population aged 65+", "urban_share": "Share living in cities", "life_expectancy": "Life expectancy",
+          "gini": "Income inequality (Gini)", "tertiary_enrolment": "University enrolment", "education_spend_gdp": "Education spending (% of GDP)", "rd_gdp": "Research spending (% of GDP)",
+          "patents_residents": "Patents filed by residents", "internet_users": "Internet users", "mobile_subscriptions": "Mobile phone subscriptions", "gov_effectiveness": "Government effectiveness",
+          "regulatory_quality": "Regulatory quality", "rule_of_law": "Rule of law", "corruption_control": "Control of corruption", "voice_accountability": "Voice and accountability",
+          "political_stability": "Political stability", "dev_index": "Development index", "inst_index": "Institutions index"}
+nice = lambda f: LABELS.get(f, pretty(f).capitalize())
+INDICES = {"dev_index": "Development index", "inst_index": "Institutions index"}
+OUTCOMES = {"roa": "Return on assets, ROA (% points)", "margin": "Net profit margin", "loss": "Loss-making company-years (%)"}
+FEATURE_OPTIONS = [{"label": nice(f), "value": f} for f in FEATS] + [{"label": v, "value": k} for k, v in INDICES.items()]
 OUTCOME_OPTIONS = [{"label": v, "value": k} for k, v in OUTCOMES.items()]
-MAP_OPTIONS = OUTCOME_OPTIONS + [{"label": v, "value": k} for k, v in INDICES.items()] + [{"label": pretty(f), "value": f} for f in FEATS]
+MAP_OPTIONS = OUTCOME_OPTIONS + [{"label": v, "value": k} for k, v in INDICES.items()] + [{"label": nice(f), "value": f} for f in FEATS]
 Z = ((country[FEATS] - country[FEATS].mean()) / country[FEATS].std())
 GROUPS = sorted(set(X["group"].values()))
-PRESETS = [("Richer countries, lower returns", "dev_index", "roa"), ("Institutions vs loss-making firms", "inst_index", "loss"),
-           ("Credit depth vs net margin", "private_credit_gdp", "margin"), ("Trade openness vs ROA", "trade_gdp", "roa"),
+PRESETS = [("Richer countries, lower returns", "dev_index", "roa"), ("Strong institutions vs loss-making firms", "inst_index", "loss"),
+           ("Bank credit vs profit margin", "private_credit_gdp", "margin"), ("Trade openness vs ROA", "trade_gdp", "roa"),
            ("Life expectancy vs ROA", "life_expectancy", "roa")]
 
 
 SECTORS = sorted(s for s in F.sector.dropna().unique() if s != "Unknown")
 SECTOR_OPTIONS = [{"label": "All sectors", "value": "all"}] + [{"label": s, "value": s} for s in SECTORS]
 YEARS = (int(F.fiscal_year.clip(2022, 2025).min()), int(F.fiscal_year.clip(2022, 2025).max()))
+_rows = F.groupby("fiscal_year").size()
+MAIN_YEARS = (int(_rows[_rows >= 500].index.min()), int(_rows[_rows >= 500].index.max()))      # years with a real number of filings
+WINDOW = f"fiscal {MAIN_YEARS[0]}–{MAIN_YEARS[1]}"                                               # the one coverage window quoted everywhere
 MIN_FIRMS = 10
+MINUS = "−"
+
+
+def sg(x, d=1):
+    """Signed number with a true minus sign; tiny values print as plain zero."""
+    if x is None or pd.isna(x):
+        return "n/a"
+    if round(x, d) == 0:
+        return f"{0:.{d}f}"
+    return ("+" if x > 0 else MINUS) + f"{abs(x):.{d}f}"
+
+
+def graph(fig=None, id=None, h=360):
+    """dcc.Graph with a fixed pixel height so a chart can never grow the page."""
+    kw = {"config": CFG, "style": {"height": f"{h}px"}}
+    if id:
+        kw["id"] = id
+    if fig is not None:
+        fig.update_layout(height=h)
+        kw["figure"] = fig
+    return dcc.Graph(**kw)
+
+
+def with_labels(d, x, y, k=10):
+    """Show text labels only for the k most extreme points; the rest are on hover. Keeps scatter plots readable."""
+    zx, zy = (d[x] - d[x].mean()) / d[x].std(), (d[y] - d[y].mean()) / d[y].std()
+    keep = (zx.abs() + zy.abs()).nlargest(k).index
+    return d.assign(lab=np.where(d.index.isin(keep), d.iso2, ""))
+
+
+def sample_txt(r):
+    """n counts countries for the country-level tests and company-years for the firm-level ones."""
+    if r["effect_unit"].startswith("Spearman"):
+        return f'n = {r["n"]} countries'
+    return f'n = {r["n"]:,} company-years in {r["clusters"]} countries'
 
 
 def firm_slice(sector="all", years=None):
@@ -80,7 +131,7 @@ def cap(text):
 
 
 def ci(r):
-    return "n/a" if r["ci_low"] is None or r["ci_high"] is None else f'{r["ci_low"]:.2f} to {r["ci_high"]:.2f}'
+    return "n/a" if r["ci_low"] is None or r["ci_high"] is None else f'{sg(r["ci_low"], 2)} to {sg(r["ci_high"], 2)}'
 
 
 def kpi(title, value, sub=""):
@@ -91,95 +142,144 @@ def stats_toggle(*lines):
     return html.Details([html.Summary("Stats detail"), *[html.Div(l) for l in lines]], className="stats")
 
 
-# ---------------------------------------------------------------- overview
-# plain-English headline and the number to show; (id, headline, number, unit, plain reading)
+
+# ---------------------------------------------------------------- plain-language content
+# (id, headline, number, unit): the number and unit shown on each finding card
 FINDINGS = [
-    ("H0", "Firms in more developed countries earn slightly less on their assets", lambda r: f'{r["effect"]:+.1f} pp ROA', "per +1 SD of development"),
-    ("H13", "The effect sits in small firms; the largest third of firms show almost none", lambda r: f'{r["effect"]:+.1f} pp', "development × size interaction"),
-    ("H11", "The main finding survives dropping any single country", lambda r: f'{r["effect"]:+.1f} pp', "weakest of 34 leave-one-out runs"),
-    ("H5", "Countries with deeper bank credit have deeper stock markets", lambda r: f'ρ = {r["effect"]:+.2f}', "credit vs market value, 20 countries"),
-    ("H6", "In the EU, higher labour cost goes with higher productivity", lambda r: f'ρ = {r["effect"]:+.2f}', "hourly labour cost vs output per worker"),
-    ("H1", "Surprise: stronger institutions go with MORE loss-making firms (small open economies explain it)", lambda r: f'{r["effect"]:+.1f} pp', "loss probability per +1 SD institutions"),
-    ("H15", "The two data sources agree, so the numbers can be trusted", lambda r: f'ρ = {r["effect"]:+.2f}', "Yahoo vs ESEF ROA, same company-year"),
+    ("H0", "Firms in more developed countries earn slightly less on their assets", lambda r: f'{sg(r["effect"])} pp ROA', "points of ROA per step up in development (+1 SD)"),
+    ("H13", "The effect sits in small firms; the largest third of firms show almost none", lambda r: f'{sg(r["effect"], 2)} pp', "extra effect for bigger firms (development × size)"),
+    ("H11", "The main finding survives dropping any single country", lambda r: f'{sg(r["effect"])} pp', "weakest of 34 runs, each leaving one country out"),
+    ("H5", "Countries with deeper bank credit have deeper stock markets", lambda r: f'ρ = {sg(r["effect"], 2)}', "match between credit and stock-market size, 20 countries"),
+    ("H6", "In the EU, higher labour cost goes with higher productivity", lambda r: f'ρ = {sg(r["effect"], 2)}', "match between hourly labour cost and output per worker"),
+    ("H1", "Surprise: stronger institutions go with MORE loss-making firms (small open economies explain it)", lambda r: f'{sg(r["effect"], 2)} pp', "extra chance of a loss per step up in institutions (+1 SD)"),
+    ("H15", "The two data sources agree, so the numbers can be trusted", lambda r: f'ρ = {sg(r["effect"], 2)}', "match between Yahoo and ESEF ROA, same company-year"),
 ]
+SHORT = {"H0": "Development and ROA", "H13": "Small vs large firms", "H5": "Credit and stock markets", "H6": "EU labour cost and output", "H1": "Institutions and losses"}
+PLAIN = {
+    "H0": "Across 34 countries, companies in richer, more developed countries tend to earn a bit less profit for every euro of assets they own. Each step up the development "
+          "scale goes with about 1.1 percentage points lower return on assets. A second, independent data source shows the same pattern, and it survives removing any single "
+          "country. It is a pattern, not proof of cause: it could reflect tougher competition, higher costs, or the kinds of companies that are listed.",
+    "H13": "The pattern is not the same for everyone. Small companies carry it: for them, a more developed country goes with about 2 points lower ROA. For the largest third of "
+           "companies the effect is close to zero. We noticed this while exploring the data, so treat it as a strong lead rather than a settled fact.",
+    "H11": "This is a stress test of the main finding. We re-ran it 34 times, each time leaving out one country, and with other ways of measuring development. The result stayed "
+           "negative every time. The weakest case (dropping India) is still about −0.9 points. So the main finding does not depend on one or two unusual countries.",
+    "H5": "Countries where banks lend more to businesses and households also tend to have bigger stock markets. The pattern is strong across the 20 countries with data (a match of "
+          "+0.77, where +1 would be perfect) and stays strong once we account for how rich each country is. It came from exploring the same data, so it is labelled exploratory.",
+    "H6": "Inside the EU, countries where an hour of work costs more also produce more value per worker (a match of +0.90). Roughly, a 10% higher labour cost goes with about 8.7% "
+          "higher output per worker. That fits the idea that expensive labour is paid for by higher productivity.",
+    "H1": "We expected stronger institutions (rule of law, effective government) to go with fewer loss-making companies. The data show the opposite. But the effect disappears once "
+          "we account for how open to trade, and how small, each economy is: small open economies drive it. So it is not a real effect of institutions.",
+    "H15": "This is a data check, not a finding about countries. We compared Yahoo Finance profit figures with the officially filed accounts (ESEF) for the same companies and years. "
+           "They match almost perfectly, so the Yahoo numbers can be trusted. The flip side: for the 484 companies in both sources, the second source is not an independent confirmation.",
+}
+VERDICT_TEXT = {"supported": "Holds up", "contradicted": "Surprise: the opposite of what we expected", "not supported": "No clear evidence"}
+GLOSSARY = [("ROA (return on assets)", "Profit divided by everything the company owns. 5% means 5 cents of profit per euro of assets."),
+            ("pp (percentage points)", "A gap between two percentages. Going from 5% to 4% ROA is 1 pp lower."),
+            ("SD (standard deviation)", "A yardstick for 'one typical step'. A country 1 SD above average is about as far above average as the typical country differs from it."),
+            ("ρ (rho)", "How closely two things move together, from −1 to +1. 0 means no link, +1 means they always rise together."),
+            ("p and q", "How easily chance alone could explain a result. Small is better. q is p after correcting for having tested many ideas."),
+            ("Wild cluster bootstrap", "A re-sampling method that suits having only 34 countries."),
+            ("Exploratory", "Suggested by looking at the same data, so treat it as a lead rather than proof."),
+            ("Yahoo / ESEF", "The two sources of company accounts: Yahoo Finance (all 34 countries) and official EU filings (ESEF).")]
+
+
+def glossary():
+    return dbc.Accordion([dbc.AccordionItem(html.Dl([x for t, d in GLOSSARY for x in (html.Dt(t), html.Dd(d))], className="glossary"), title="Words used on this page")],
+                         start_collapsed=True, className="mt-3")
+
+
 HOLDS = [f[0] for f in FINDINGS if f[0] in HYP]
 CONFIRMED = [h for h in HOLDS if h not in EXPLORATORY and h != "H0"]
 EXPLO = [h for h in HOLDS if h in EXPLORATORY]
 FDICT = {f[0]: f for f in FINDINGS}
 REST = [h for h in HYP if h not in HOLDS]
+HNUM = lambda h: int(h[1:])
 
 
+def hlink(h, text=None, cls="hlink"):
+    return dcc.Link(text or h, href=f"/h/{h}", className=cls)
+
+
+# ---------------------------------------------------------------- overview
 def finding_card(h, headline, big, unit, hero=False):
     r = HYP[h]
     warn = r["verdict"] == "contradicted"
     tags = [dbc.Badge("check, not a new claim", color="secondary", className="me-1")] if h in NOT_A_TEST else \
-           [dbc.Badge("highly robust" if Q[h] < 0.001 else "holds up", className="me-1 bg-red")]
+           [dbc.Badge("surprising result" if warn else ("highly robust" if Q[h] < 0.001 else "holds up"), className="me-1 " + ("bg-amber" if warn else "bg-red"))]
     if h in EXPLORATORY:
         tags.append(dbc.Badge("exploratory", color="warning", text_color="dark", className="me-1"))
     rep = r.get("replication_coef")
     if rep is not None and not pd.isna(rep) and r.get("replication_same_sign"):
         tags.append(dbc.Badge("confirmed on 2nd data source", className="me-1 bg-ash"))
-    qtxt = "" if h in NOT_A_TEST else f'q {"< 0.001" if Q[h] < 0.001 else f"= {Q[h]:.3f}"} (Benjamini–Hochberg corrected across 15 tests). '
-    stats = stats_toggle(f'{qtxt}p = {r["p_primary"]:.2g} ({r["p_method"]}); 95% CI {ci(r)}; n = {r["n"]:,} firm-years in {r["clusters"]} countries.')
+    qtxt = "" if h in NOT_A_TEST else f'q {"< 0.001" if Q[h] < 0.001 else f"= {Q[h]:.3f}"} (corrected for testing 15 ideas). '
+    stats = stats_toggle(f'{qtxt}p = {r["p_primary"]:.2g} ({r["p_method"]}); 95% range {ci(r)}; {sample_txt(r)}.')
     return dbc.Col(dbc.Card(dbc.CardBody([
-        html.Small(f'{h} · {r["title"]}', className="text-muted"), html.H5(headline, className="mt-1"),
-        html.H2(big, className="big warn" if warn else "big"), html.Small(unit, className="text-muted d-block mb-2"), html.Div(tags), stats]),
+        html.Small([hlink(h), f' · {r["title"]}'], className="text-muted"), html.H5(headline, className="mt-1"),
+        html.H2(big, className="big warn" if warn else "big"), html.Small(unit, className="text-muted d-block mb-2"), html.Div(tags), stats,
+        html.Div(hlink(h, "Read the full finding →", "more-link"), className="mt-2")]),
         className="finding h-100 shadow-sm" + (" warn" if warn else "")), md=12 if hero else 6, lg=12 if hero else 4, className="mb-3")
 
 
 def evidence_fig():
     ids = [h for h in HOLDS if h not in NOT_A_TEST]
-    d = pd.DataFrame({"h": ids, "title": [HYP[h]["title"] for h in ids], "strength": [-np.log10(max(HYP[h]["p_primary"], 1e-9)) for h in ids],
+    d = pd.DataFrame({"h": ids, "label": [f'{h} · {SHORT.get(h, HYP[h]["title"][:24])}' for h in ids], "strength": [-np.log10(max(HYP[h]["p_primary"], 1e-9)) for h in ids],
                       "verdict": [HYP[h]["verdict"] for h in ids]})
-    fig = px.bar(d, x="strength", y=d.h + " " + d.title.str.slice(0, 32), orientation="h", color="verdict", color_discrete_map=VERDICT_COLOR, template=TPL,
-                 labels={"strength": "evidence strength (higher = harder to explain by chance)", "y": ""})
-    fig.add_vline(x=-np.log10(0.05), line_dash="dot", line_color=MUTED, annotation_text="conventional threshold", annotation_font_color=MUTED)
-    fig.update_layout(height=60 + 42 * len(d), margin=dict(l=10, r=10, t=10, b=40), showlegend=False, yaxis_autorange="reversed")
-    fig.update_yaxes(automargin=True)
+    fig = px.bar(d, x="strength", y="label", orientation="h", color="verdict", color_discrete_map=VERDICT_COLOR, template=TPL,
+                 labels={"strength": "strength of evidence (longer bar = harder to explain by chance)", "label": ""})
+    fig.add_vline(x=-np.log10(0.05), line_dash="dot", line_color=MUTED)
+    fig.add_annotation(x=-np.log10(0.05), y=1.0, yref="paper", text="conventional threshold", showarrow=False, yshift=12, font=dict(color=MUTED, size=11), xanchor="left")
+    fig.update_layout(margin=dict(l=10, r=10, t=34, b=60), showlegend=False, yaxis_autorange="reversed")
+    fig.update_xaxes(title_standoff=14)
     return fig
 
 
 def rest_table():
-    head = html.Thead(html.Tr([html.Th(x) for x in ["", "Question", "Effect", "p", "q (BH)"]]))
-    rows = [html.Tr([html.Td(h), html.Td(HYP[h]["title"]), html.Td(f'{HYP[h]["effect"]:.2f}', title=HYP[h]["effect_unit"]), html.Td(f'{HYP[h]["p_primary"]:.2g}'),
-                     html.Td(f"{Q[h]:.2f}" if h in Q.index else "–")]) for h in REST]
+    head = html.Thead(html.Tr([html.Th(x) for x in ["", "Question", "What was measured", "Effect", "Chance (p)"]]))
+    unit = lambda u: u.replace("pp", "points").replace(" SD", " standard deviation")
+    rows = [html.Tr([html.Td(hlink(h)), html.Td(HYP[h]["title"]), html.Td(unit(HYP[h]["effect_unit"])), html.Td(sg(HYP[h]["effect"], 2)),
+                     html.Td("≥ 0.99" if HYP[h]["p_primary"] >= 0.99 else f'{HYP[h]["p_primary"]:.2g}')]) for h in REST]
     return dbc.Table([head, html.Tbody(rows)], size="sm", responsive=True, className="small text-muted")
 
 
 def hero_card():
     h, hl, fn, unit = FDICT["H0"]
     r = HYP[h]
-    d = country
-    fig = px.scatter(d.reset_index(), x="dev_index", y="roa", text="iso2", hover_name="name", template=TPL, color_discrete_sequence=[REDHI],
-                     labels={"dev_index": "development index (SD)", "roa": "mean ROA (pp)"})
+    d = with_labels(country, "dev_index", "roa", 9)
+    fig = px.scatter(d.reset_index(), x="dev_index", y="roa", text="lab", hover_name="name", template=TPL, color_discrete_sequence=[REDHI],
+                     labels={"dev_index": "development index (SD)", "roa": "average ROA (%)"})
     b = np.polyfit(d.dev_index, d.roa, 1)
     xs = np.linspace(d.dev_index.min(), d.dev_index.max(), 20)
-    fig.add_trace(go.Scatter(x=xs, y=np.polyval(b, xs), mode="lines", line=dict(color=MUTED, dash="dash"), showlegend=False))
-    fig.update_traces(textposition="top center", textfont=dict(size=9, color=MUTED), marker=dict(size=9, opacity=.9), selector=dict(mode="markers+text"))
-    fig.update_layout(height=300, margin=dict(l=0, r=0, t=10, b=0))
+    fig.add_trace(go.Scatter(x=xs, y=np.polyval(b, xs), mode="lines", line=dict(color=MUTED, dash="dash"), showlegend=False, hoverinfo="skip"))
+    fig.update_traces(textposition="top center", textfont=dict(size=10, color=TEXT), marker=dict(size=9, opacity=.9), selector=dict(mode="markers+text"))
+    fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
+    fig.update_xaxes(title_standoff=14)
+    fig.update_yaxes(title_standoff=14)
     return dbc.Card(dbc.CardBody(dbc.Row([
-        dbc.Col([html.Small(f'{h} · {r["title"]}', className="text-muted"), html.H3(hl, className="mt-1"), html.H1(fn(r), className="big"),
+        dbc.Col([html.Small([hlink(h), f' · {r["title"]}'], className="text-muted"), html.H3(hl, className="mt-1"), html.H1(fn(r), className="big"),
                  html.Small(unit, className="text-muted d-block mb-2"), dbc.Badge("highly robust", className="me-1 bg-red"), dbc.Badge("confirmed on 2nd data source", className="bg-ash"),
-                 stats_toggle(f'p = {r["p_primary"]:.2g} ({r["p_method"]}); 95% CI {ci(r)}; n = {r["n"]:,} firm-years in {r["clusters"]} countries.')], md=5),
-        dbc.Col([dcc.Graph(figure=fig, config=CFG), cap("Each dot is a country. Further right = more developed; higher up = firms earn more on their assets. The dashed line slopes down.")], md=7)],
+                 stats_toggle(f'p = {r["p_primary"]:.2g} ({r["p_method"]}); 95% range {ci(r)}; {sample_txt(r)}.'),
+                 html.Div(hlink(h, "Read the full finding →", "more-link"), className="mt-2")], md=5),
+        dbc.Col([graph(fig, h=320), cap("Each dot is a country (the most extreme ones are labelled; hover for the rest). Further right = more developed; higher up = firms earn more on their assets. The dashed line slopes down.")], md=7)],
         align="center")), className="finding hero-card shadow-sm")
 
 
 layout_overview = html.Div([
     dbc.Row([dbc.Col(xs=6, md=True, children=kpi("Countries", f"{len(country)}", "21 EU + 13 non-EU")),
              dbc.Col(xs=6, md=True, children=kpi("Companies", f'{X["n_companies"]:,}', "listed, Yahoo Finance")),
-             dbc.Col(xs=6, md=True, children=kpi("Firm-years", f'{X["n_firm_years"]:,}', f'fiscal {X["years"][0]}–{X["years"][1]}')),
+             dbc.Col(xs=6, md=True, children=kpi("Company-years", f'{X["n_firm_years"]:,}', f"mostly {WINDOW}")),
              dbc.Col(xs=6, md=True, children=kpi("Country indicators", f"{len(FEATS)}", "World Bank, WGI, IMF, Eurostat")),
-             dbc.Col(xs=6, md=True, children=kpi("Findings that hold", f"{N_PASS}", f"of {len(Q)} tests, after multiple-testing correction"))], className="g-3 mb-4"),
-    dbc.Alert([html.B("Question: "), "how do the social and economic conditions of a country relate to the performance of the companies that operate there?"], className="alert-quest"),
-    html.H4("The headline result"),
+             dbc.Col(xs=6, md=True, children=kpi("Findings that hold", f"{N_PASS}", f"of {len(Q)} tests (17 ideas, 2 are data checks)"))], className="g-3 mb-4"),
+    dbc.Alert([html.B("Question: "), "how do the social and economic conditions of a country relate to the performance of the companies that operate there? ",
+               "Click an H-number on any finding to read the full story."], className="alert-quest"),
+    glossary(),
+    html.H4("The headline result", className="mt-4"),
     hero_card(),
     html.H4("Also holds up", className="mt-4"), html.P("Checks that back the headline up, and findings that were planned in advance.", className="text-muted small"),
     dbc.Row([finding_card(*FDICT[h][:2], FDICT[h][2](HYP[h]), FDICT[h][3]) for h in CONFIRMED], className="g-3"),
     html.H4("Exploratory findings", className="mt-4"),
     html.P("These came from looking at the same data, so treat them as leads rather than proof.", className="text-muted small"),
     dbc.Row([finding_card(*FDICT[h][:2], FDICT[h][2](HYP[h]), FDICT[h][3]) for h in EXPLO], className="g-3"),
-    html.H6("How strong is the evidence?", className="mt-3"), dcc.Graph(figure=evidence_fig(), config=CFG),
+    html.H6("How strong is the evidence?", className="mt-3"), graph(evidence_fig(), h=60 + 46 * len([h for h in HOLDS if h not in NOT_A_TEST]) + 60),
     cap("Each bar is one finding; the longer the bar, the harder the result is to explain by chance. Bars past the dotted line pass the conventional threshold."),
     dbc.Accordion([dbc.AccordionItem([html.P(f"{len(REST)} further questions were tested; the data show no clear effect. They are listed for completeness: "
                                              "a clear answer of \"no\" is still an answer.", className="small text-muted"), rest_table()],
@@ -188,68 +288,163 @@ layout_overview = html.Div([
                className="text-muted d-block mt-3"),
 ])
 
-# ---------------------------------------------------------------- explore: scatter + map + size
+# ---------------------------------------------------------------- hypothesis pages (one per Hx, opened from the Overview)
 _se = pd.DataFrame(X["size_effects"])
 _size_fig = px.bar(_se, x="size", y="coef", error_y=_se.hi - _se.coef, error_y_minus=_se.coef - _se.lo, template=TPL, color_discrete_sequence=[REDHI],
-                   labels={"coef": "pp ROA per +1 SD development", "size": "company size within its country"})
-_size_fig.update_layout(height=340, margin=dict(l=0, r=0, t=10, b=0))
+                   labels={"coef": "ROA change (points)", "size": "company size within its country"})
+_size_fig.update_layout(margin=dict(l=10, r=10, t=10, b=10))
+_size_fig.update_xaxes(title_standoff=14)
 _g = X["grid"]
-_heat = px.imshow(pd.DataFrame(_g["data"], index=_g["index"], columns=_g["columns"]), text_auto=".1f", color_continuous_scale=RED_SCALE, aspect="auto", template=TPL)
-_heat.update_layout(height=300, margin=dict(l=0, r=0, t=10, b=0), coloraxis_showscale=False)
+_heat = px.imshow(pd.DataFrame(_g["data"], index=_g["index"], columns=_g["columns"]), text_auto=".1f", color_continuous_scale=RED_SCALE, aspect="auto", template=TPL,
+                  labels={"x": "country development", "y": "company size"})
+_heat.update_layout(margin=dict(l=10, r=10, t=10, b=10), coloraxis_showscale=False)
 
+
+def range_fig(r):
+    lo, hi, e = r["ci_low"], r["ci_high"], r["effect"]
+    if lo is None or hi is None or pd.isna(lo) or pd.isna(hi):
+        return None
+    fig = go.Figure(go.Scatter(x=[e], y=[""], mode="markers", marker=dict(size=14, color=REDHI), error_x=dict(type="data", symmetric=False, array=[hi - e], arrayminus=[e - lo], color=REDHI, thickness=4, width=10),
+                               hovertemplate=f"estimate {sg(e, 2)}<br>range {sg(lo, 2)} to {sg(hi, 2)}<extra></extra>"), layout=dict(template=TPL))
+    pad = (max(hi, 0) - min(lo, 0)) * 0.12
+    fig.add_vline(x=0, line_color=MUTED, line_dash="dot")
+    fig.add_annotation(x=0, y=1.0, yref="paper", text="no effect", showarrow=False, yshift=12, font=dict(color=MUTED, size=11), xanchor="left")
+    fig.update_xaxes(range=[min(lo, 0) - pad, max(hi, 0) + pad], title="effect (dot) and the range we are 95% sure it lies in (line)", title_standoff=12)
+    fig.update_yaxes(visible=False)
+    fig.update_layout(margin=dict(l=10, r=10, t=30, b=50), showlegend=False)
+    return fig
+
+
+def hyp_page(h):
+    r = HYP[h]
+    headline = FDICT[h][1] if h in FDICT else r["statement"]
+    big = FDICT[h][2](r) if h in FDICT else (f'ρ = {sg(r["effect"], 2)}' if r["effect_unit"].startswith("Spearman") else f'{sg(r["effect"], 2)} pp')
+    unit = (FDICT[h][3] if h in FDICT else r["effect_unit"].replace("pp", "points").replace(" SD", " standard deviation"))
+    warn = r["verdict"] != "supported"
+    tags = [dbc.Badge(VERDICT_TEXT.get(r["verdict"], r["verdict"]), className="me-2 " + ("bg-amber" if r["verdict"] == "contradicted" else "bg-ash" if warn else "bg-red"))]
+    if h in EXPLORATORY:
+        tags.append(dbc.Badge("exploratory", color="warning", text_color="dark", className="me-2"))
+    if h in NOT_A_TEST:
+        tags.append(dbc.Badge("check, not a new claim", color="secondary", className="me-2"))
+    rep = r.get("replication_coef")
+    if rep is None or pd.isna(rep):
+        rep_txt = "This idea could not be re-tested on a second data source."
+    else:
+        rep_txt = f'The second data source (ESEF filings) gives {sg(rep, 2)}, in the {"same" if r["replication_same_sign"] else "opposite"} direction.'
+    fig = range_fig(r)
+    extra = []
+    if h == "H0":
+        d = with_labels(country, "dev_index", "roa", 12)
+        f = px.scatter(d.reset_index(), x="dev_index", y="roa", text="lab", hover_name="name", template=TPL, color_discrete_sequence=[REDHI],
+                       labels={"dev_index": "development index (SD)", "roa": "average ROA (%)"})
+        b = np.polyfit(d.dev_index, d.roa, 1)
+        xs = np.linspace(d.dev_index.min(), d.dev_index.max(), 20)
+        f.add_trace(go.Scatter(x=xs, y=np.polyval(b, xs), mode="lines", line=dict(color=MUTED, dash="dash"), showlegend=False, hoverinfo="skip"))
+        f.update_traces(textposition="top center", textfont=dict(size=10, color=TEXT), selector=dict(mode="markers+text"))
+        f.update_layout(margin=dict(l=10, r=10, t=10, b=10))
+        f.update_xaxes(title_standoff=14)
+        f.update_yaxes(title_standoff=14)
+        extra = [html.H5("The pattern, country by country", className="mt-4"), graph(f, h=380), cap("Each dot is a country. Further right = more developed; higher up = firms earn more on their assets.")]
+    elif h == "H13":
+        extra = [html.H5("Who carries the effect?", className="mt-4"),
+                 dbc.Row([dbc.Col([html.H6("Change in ROA by company size"), graph(_size_fig, h=340),
+                                   cap("Per step up in development, ROA changes by this many points for small, medium and large firms. Whiskers show the 95% range. The effect shrinks as firms get bigger.")], md=6),
+                          dbc.Col([html.H6("Typical ROA (%): company size × country development"), graph(_heat, h=340),
+                                   cap("Rows are company size, columns are how developed the country is. Brighter = higher ROA.")], md=6)])]
+    elif h == "H1":
+        d = with_labels(country, "inst_index", "loss", 10)
+        f = px.scatter(d.reset_index(), x="inst_index", y="loss", text="lab", hover_name="name", template=TPL, color_discrete_sequence=[AMBER],
+                       labels={"inst_index": "institutions index (SD)", "loss": "share of loss-making company-years (%)"})
+        f.update_traces(textposition="top center", textfont=dict(size=10, color=TEXT), selector=dict(mode="markers+text"))
+        f.update_layout(margin=dict(l=10, r=10, t=10, b=10))
+        f.update_xaxes(title_standoff=14)
+        f.update_yaxes(title_standoff=14)
+        extra = [html.H5("The surprising pattern", className="mt-4"), graph(f, h=380), cap("Each dot is a country. Further right = stronger institutions; higher up = more loss-making companies.")]
+    caveats = ["This shows an association, not a cause."]
+    if h in EXPLORATORY:
+        caveats.append("It was suggested by looking at the same data, so it is a lead rather than proof.")
+    if h in NOT_A_TEST:
+        caveats.append("It is a robustness or data-quality check, so it sits outside the multiple-testing correction.")
+    if r["effect_unit"].startswith("Spearman"):
+        caveats.append(f'It is based on {r["n"]} countries, so it is a country-level pattern, not a company-level one.')
+    pos = [x for x in HYP if HNUM(x) == HNUM(h) - 1] + [x for x in HYP if HNUM(x) == HNUM(h) + 1]
+    return html.Div([
+        dcc.Link("← Back to all findings", href="/", className="more-link"),
+        html.Div([html.Small(f'{h} · {r["title"]}', className="text-muted d-block mt-3"), html.H2(headline, className="mt-1"), html.Div(tags, className="mb-3")]),
+        dbc.Row([dbc.Col(dbc.Card(dbc.CardBody([html.Small("The number", className="text-muted"), html.H1(big, className="big warn" if warn and r["verdict"] == "contradicted" else "big"),
+                                                html.Small(unit, className="text-muted")]), className="finding h-100" + (" warn" if r["verdict"] == "contradicted" else "")), md=4),
+                 dbc.Col(dbc.Card(dbc.CardBody([html.H5("In plain words"), html.P(PLAIN.get(h, r["statement"]), className="mb-0")]), className="h-100"), md=8)], className="g-3 mb-4"),
+        html.H5("How sure are we?"),
+        html.Ul([html.Li(f'Our best estimate is {sg(r["effect"], 2)}, and we are 95% sure the true value lies between {ci(r)}.' if fig is not None else "No range could be computed for this one."),
+                 html.Li(f'It held in {r["robust_share"]:.0%} of the alternative ways we cut the data.' if r.get("robust_share") is not None and not pd.isna(r["robust_share"]) else "Robustness was not summarised for this one."),
+                 html.Li(rep_txt), html.Li(f'Basis: {sample_txt(r)}.')]),
+        graph(fig, h=170) if fig is not None else html.Div(),
+        *extra,
+        html.H5("Keep in mind", className="mt-4"), html.Ul([html.Li(c) for c in caveats]),
+        dbc.Accordion([dbc.AccordionItem([html.P(f'Estimate {r["effect"]:.3f} {r["effect_unit"]}; 95% CI {ci(r)}; p = {r["p_primary"]:.3g} ({r["p_method"]}); {sample_txt(r)}.' +
+                                                 ("" if h in NOT_A_TEST or h not in Q.index else f' q = {Q[h]:.3f} (Benjamini–Hochberg across 15 tests).'), className="small"),
+                                          html.Ul([html.Li(n) for n in r["notes"]], className="small")], title="Technical details")], start_collapsed=True, className="mt-3"),
+        html.Small(f'Full analysis in notebook {r["notebook"]}', className="text-muted d-block mt-3"),
+    ])
+
+
+# ---------------------------------------------------------------- explore: scatter + map + size
 layout_explore = html.Div([
     html.H5("Explore: pick any country condition and any firm outcome"),
-    html.P("Each dot is a country (average over 2019–2023). Start from a preset or choose your own.", className="text-muted"),
+    html.P(f"Each dot is a country (average over all available years, mainly {WINDOW}). Start from a preset or choose your own.", className="text-muted"),
     html.Div([dbc.Button(lbl, id={"type": "preset", "index": i}, className="btn-preset me-2 mb-2", n_clicks=0) for i, (lbl, _, _) in enumerate(PRESETS)]),
     dbc.Row([dbc.Col([dbc.Label("Country condition (x)"), dcc.Dropdown(FEATURE_OPTIONS, "dev_index", id="x", clearable=False)], md=4),
              dbc.Col([dbc.Label("Firm outcome (y)"), dcc.Dropdown(OUTCOME_OPTIONS, "roa", id="y", clearable=False)], md=4),
-             dbc.Col([dbc.Label("Colour by"), dcc.Dropdown([{"label": "region", "value": "region"}, {"label": "income group", "value": "income_group"},
-                                                           {"label": "EU group", "value": "eu_group"}], "region", id="colour", clearable=False)], md=4)], className="mb-3"),
+             dbc.Col([dbc.Label("Colour by"), dcc.Dropdown([{"label": "Region", "value": "region"}, {"label": "Income group", "value": "income_group"},
+                                                           {"label": "EU or not", "value": "eu_group"}], "region", id="colour", clearable=False)], md=4)], className="mb-3"),
     dbc.Row([dbc.Col([dbc.Label("Sector (recomputes firm outcomes)"), dcc.Dropdown(SECTOR_OPTIONS, "all", id="sector", clearable=False)], md=4),
              dbc.Col([dbc.Button("Download country table (CSV)", id="dl-btn", className="btn-preset mt-4"), dcc.Download(id="dl")], md=4)], className="mb-3"),
-    dcc.Graph(id="scatter", config=CFG), html.Div(id="scatter-note", className="text-muted"),
-    cap("Each bubble is a country; bigger bubbles have more firms. A slope means the condition on the x-axis goes with the firm outcome on the y-axis. It does not prove cause. Use the camera icon on a chart to save a PNG."),
+    graph(id="scatter", h=540), html.Div(id="scatter-note", className="text-muted"),
+    cap("Each bubble is a country; bigger bubbles have more firms. Labels show the most extreme countries; hover for the rest. A slope means the condition on the x-axis goes with the firm outcome on the y-axis. It does not prove cause."),
     html.Hr(),
     html.H5("Map"),
     dbc.Row([dbc.Col([dbc.Label("Show"), dcc.Dropdown(MAP_OPTIONS, "roa", id="map-metric", clearable=False)], md=6),
              dbc.Col([dbc.Label("Area"), dbc.RadioItems(options=[{"label": "Europe", "value": "europe"}, {"label": "World", "value": "world"}], value="europe", id="map-scope", inline=True)], md=6)],
             className="mb-2"),
-    dcc.Graph(id="map", config=CFG), cap("Darker = lower, brighter red = higher. Grey countries have no data in this study."),
+    graph(id="map", h=520), cap("Darker = lower, brighter red = higher. Grey countries are not part of this study."),
     html.Hr(),
     html.H5("Who carries the effect? Small firms"),
-    html.P(HYP["H13"]["notes"][0]),
-    dbc.Row([dbc.Col([html.H6("Development → ROA by company size"), dcc.Graph(figure=_size_fig, config=CFG),
-                      cap("Bars show how much ROA changes per +1 SD of development, for small, medium and large firms. Whiskers are the 95% range. The effect shrinks as firms get bigger.")], md=6),
-             dbc.Col([html.H6("Median ROA (pp): size × country development"), dcc.Graph(figure=_heat, config=CFG),
-                      cap("Median ROA by firm size (rows) and country development (columns). Brighter = higher return.")], md=6)]),
-    html.Small(HYP["H13"]["notes"][2] + " Exploratory: this refinement grew out of looking at H0.", className="text-muted"),
-    html.Hr(),
-    html.H6("The primary test (H0)"), html.P(HYP["H0"]["notes"][0]), stats_toggle(HYP["H0"]["notes"][1]),
+    html.P(["Small companies carry the main pattern; the largest third of firms show almost none. ", hlink("H13", "Read the full finding →", "more-link")]),
+    dbc.Row([dbc.Col([html.H6("Change in ROA by company size"), graph(_size_fig, h=340),
+                      cap("Per step up in development, ROA changes by this many points for small, medium and large firms. Whiskers show the 95% range. The effect shrinks as firms get bigger.")], md=6),
+             dbc.Col([html.H6("Typical ROA (%): company size × country development"), graph(_heat, h=340),
+                      cap("Rows are company size, columns are how developed the country is. Brighter = higher ROA.")], md=6)]),
+    html.Small("Exploratory: this refinement grew out of looking at the main finding.", className="text-muted"),
 ])
 
 # ---------------------------------------------------------------- countries (single view or side-by-side)
 layout_countries = html.Div([
     html.H5("Countries: look at one, or compare up to three"),
     dbc.Row([dbc.Col([dbc.Label("Countries (max 3)"), dcc.Dropdown(sorted(country.name), ["Germany", "Poland"], id="countries", multi=True)], md=6),
-             dbc.Col([dbc.Label("Indicator theme"), dcc.Dropdown(["all"] + GROUPS, "governance", id="theme", clearable=False)], md=3),
+             dbc.Col([dbc.Label("Indicator theme"), dcc.Dropdown([{"label": "All themes", "value": "all"}] + [{"label": g.capitalize(), "value": g} for g in GROUPS], "governance", id="theme", clearable=False)], md=3),
              dbc.Col([dbc.Label("Sector"), dcc.Dropdown(SECTOR_OPTIONS, "all", id="c-sector", clearable=False)], md=3)], className="mb-3"),
     dbc.Label("Fiscal years"), dcc.RangeSlider(YEARS[0], YEARS[1], 1, value=list(YEARS), marks={y: str(y) for y in range(YEARS[0], YEARS[1] + 1)}, id="years", className="mb-4"),
     html.Div(id="country-cards"), dcc.Graph(id="country-bars", config=CFG),
-    cap("Bars show how far each indicator sits from the average of the 34 countries, in standard deviations. Right = above average, left = below."),
-    html.H6("Median firm return (ROA) by year"), dcc.Graph(id="country-roa", config=CFG),
-    cap("Median return on assets of listed firms in each country and fiscal year."),
+    cap("Bars show how far each indicator sits from the average of the 34 countries, in standard deviations (SD). Right = above average, left = below."),
+    html.H6("Median firm return (ROA) by year"), graph(id="country-roa", h=320),
+    cap("Median return on assets of listed firms in each country and fiscal year. A dot is missing when too few firms filed that year."),
 ])
 
 # ---------------------------------------------------------------- company level: companies compared inside the same country
 CO = X["company"]
 WS = pd.DataFrame(CO["slopes"])
 W_UNIT = {"W1": 0.1, "W2": 1.0}                                     # equity ratio is shown per +0.1
-W_LABEL = {"W1": ("equity ratio", "pp ROA per +0.1 equity ratio"), "W2": ("company size", "pp ROA, largest vs smallest company")}
+W_LABEL = {"W1": ("equity ratio", "change in ROA (points) per +0.1 equity ratio"), "W2": ("company size", "change in ROA (points), largest vs smallest company")}
+W_TEXT = {"W1": ("1 · Companies with more equity financing earn more, in almost every country",
+                  "Equity ratio = equity / total assets. Inside each country, companies funded more by equity earn higher return on assets, after allowing for sector and year."),
+          "W2": ("1 · Bigger companies do not consistently earn more or less: it depends on the country",
+                 "Company size = a company's rank by total assets within its own country (0 = smallest, 1 = largest). Inside each country we ask whether bigger companies earn more ROA, after allowing for sector and year.")}
 W1S, W2S = CO["summary"]["W1"], CO["summary"]["W2"]
 AB1 = json.loads((DATA / "results" / "AB1.json").read_text())
 EUC = pd.DataFrame(CO["eu_countries"])
 SEC = CO["sector"]
 EUC_CTRL = CO["eu_controlled"]
+N_CO = len(set(WS.iso3))
 
 
 def forest_fig(h):
@@ -258,8 +453,10 @@ def forest_fig(h):
     fig = px.scatter(d, x="c", y="country", template=TPL, color_discrete_sequence=[REDHI], error_x=d.hi - d.c, error_x_minus=d.c - d.lo,
                      labels={"c": W_LABEL[h][1], "country": ""}, hover_data={"n": True, "firms": True, "c": ":.2f", "country": False})
     fig.add_vline(x=0, line_color=MUTED)
-    fig.add_vline(x=s["mean"] * u, line_dash="dot", line_color=AMBER, annotation_text=f'pooled {s["mean"] * u:+.2f}', annotation_font_color=AMBER)
-    fig.update_layout(height=680, margin=dict(l=0, r=10, t=20, b=40))
+    fig.add_vline(x=s["mean"] * u, line_dash="dot", line_color=AMBER)
+    fig.add_annotation(x=s["mean"] * u, y=1.0, yref="paper", text=f'pooled {sg(s["mean"] * u, 2)}', showarrow=False, yshift=12, font=dict(color=AMBER, size=11), xanchor="left")
+    fig.update_layout(margin=dict(l=0, r=10, t=36, b=60))
+    fig.update_xaxes(title_standoff=14)
     fig.update_yaxes(categoryorder="array", categoryarray=list(d.country), tickfont=dict(size=11))
     return fig
 
@@ -268,19 +465,21 @@ def sector_fig():
     d = pd.DataFrame({"sector": list(SEC["mean"]), "premium": list(SEC["mean"].values()), "positive": [SEC["share_positive"][k] for k in SEC["mean"]],
                       "countries": [SEC["countries"][k] for k in SEC["mean"]]}).sort_values("premium")
     fig = px.bar(d, x="premium", y="sector", orientation="h", template=TPL, color_discrete_sequence=[REDHI], hover_data={"positive": ":.0%", "countries": True, "premium": ":.2f"},
-                 labels={"premium": "ROA vs the country median (pp), average across countries", "sector": ""})
-    fig.update_layout(height=400, margin=dict(l=0, r=10, t=10, b=40))
+                 labels={"premium": "ROA vs the country's median company (points), average across countries", "sector": ""})
+    fig.update_layout(margin=dict(l=0, r=10, t=10, b=60))
+    fig.update_xaxes(title_standoff=14)
     return fig
 
 
 def eu_fig():
     d = EUC.assign(group=np.where(EUC.eu, "EU", "non-EU"))
     fig = px.strip(d, x="adj_roa", y="group", color="group", hover_name="name", template=TPL, color_discrete_map={"EU": "#d9d4cf", "non-EU": REDHI},
-                   labels={"adj_roa": "ROA after sector, size and year (pp, relative)", "group": ""})
+                   labels={"adj_roa": "ROA after allowing for sector, size and year (points, relative)", "group": ""})
     for g, v in d.groupby("group").adj_roa.mean().items():
         fig.add_shape(type="line", x0=v, x1=v, y0=-0.4 if g == "EU" else 0.6, y1=0.4 if g == "EU" else 1.4, line=dict(color=AMBER, dash="dot"))
     fig.update_traces(marker_size=11)
-    fig.update_layout(height=260, margin=dict(l=0, r=10, t=10, b=40), showlegend=False)
+    fig.update_layout(margin=dict(l=0, r=10, t=10, b=60), showlegend=False)
+    fig.update_xaxes(title_standoff=14)
     return fig
 
 
@@ -289,42 +488,42 @@ layout_company = html.Div([
     dbc.Alert([html.B("How this differs from the other tabs. "), "Everywhere else we compare countries, and there are only 34. Here we compare companies inside the same country, "
                "where the economy, tax system and institutions are shared, then run the same comparison in every country and ask whether the pattern repeats. "
                "Each country is a replication."], className="alert-quest"),
-    dbc.Row([dbc.Col(xs=6, md=3, children=kpi("Equity share and ROA", f'{W1S["mean"] * 0.1:+.1f} pp', "per +0.1 equity ratio")),
+    dbc.Row([dbc.Col(xs=6, md=3, children=kpi("Equity share and ROA", f'{sg(W1S["mean"] * 0.1)} pp', "per +0.1 equity ratio")),
              dbc.Col(xs=6, md=3, children=kpi("Repeats in", f'{round(W1S["same_sign_share"] * W1S["k"])} of {W1S["k"]}', "countries, same direction")),
-             dbc.Col(xs=6, md=3, children=kpi("Sector ranking", f'{SEC["agreement"]:+.2f}', f'country vs the rest (shuffled: {SEC["placebo"]:+.2f})')),
+             dbc.Col(xs=6, md=3, children=kpi("Sector ranking", f'{sg(SEC["agreement"], 2)}', f'country vs the rest (shuffled: {sg(SEC["placebo"], 2)})')),
              dbc.Col(xs=6, md=3, children=kpi("Company size", "no pattern", f'same direction in {W2S["same_sign_share"]:.0%} of countries'))], className="g-3 mb-4"),
-    html.H5("1 · Companies with more equity financing earn more, in almost every country"),
-    html.P("Equity ratio = equity / total assets. Inside each country, companies funded more by equity earn higher return on assets, after allowing for sector and year.", className="text-muted"),
+    html.H5(id="w-title"), html.P(id="w-desc", className="text-muted"),
     dbc.RadioItems(id="w-trait", options=[{"label": "Equity ratio (repeats)", "value": "W1"}, {"label": "Company size (does not repeat)", "value": "W2"}], value="W1", inline=True, className="mb-2"),
-    dcc.Graph(id="w-forest", config=CFG), html.Div(id="w-note", className="text-muted"),
-    cap("Each dot is one country's own estimate, with its 95% range; the dotted line is the pooled value. Countries with fewer than 30 listed companies are left out. "
+    graph(id="w-forest", h=700), html.Div(id="w-note", className="text-muted"),
+    cap(f"Each dot is one country's own estimate, with its 95% range; the dotted line is the pooled value. Countries with fewer than 30 listed companies are left out ({len(country) - N_CO} of 34). "
         "When the dots all fall on the same side of zero, the pattern repeats; when they scatter on both sides, it does not."),
-    stats_toggle(f'Equity ratio: pooled {W1S["mean"] * 0.1:+.2f} pp (95% CI {W1S["ci_low"] * 0.1:+.2f} to {W1S["ci_high"] * 0.1:+.2f}), random-effects p = {W1S["p"]:.2g}; '
-                 f'{W1S["significant_same_sign"]} countries significant in the same direction, {W1S["significant_opposite"]} in the opposite one; leave-one-country-out agreement {W1S["loo_agreement"]:.0%}.',
-                 f'Size: pooled {W2S["mean"]:+.2f} pp (95% CI {W2S["ci_low"]:+.2f} to {W2S["ci_high"]:+.2f}), p = {W2S["p"]:.2g}; {W2S["significant_same_sign"]} countries significant in the pooled direction, {W2S["significant_opposite"]} in the opposite one.'),
+    stats_toggle(f'Equity ratio: pooled {sg(W1S["mean"] * 0.1, 2)} pp (95% range {sg(W1S["ci_low"] * 0.1, 2)} to {sg(W1S["ci_high"] * 0.1, 2)}), p = {W1S["p"]:.2g}; '
+                 f'{W1S["significant_same_sign"]} countries individually significant in the same direction, {W1S["significant_opposite"]} in the opposite one; still {W1S["loo_agreement"]:.0%} same-direction when any one country is dropped.',
+                 f'Size: pooled {sg(W2S["mean"], 2)} pp (95% range {sg(W2S["ci_low"], 2)} to {sg(W2S["ci_high"], 2)}), p = {W2S["p"]:.2g}; {W2S["significant_same_sign"]} countries significant in the pooled direction, {W2S["significant_opposite"]} in the opposite one.'),
     html.Small("An equity ratio can also be high because the company has been profitable (retained earnings), so this is an association, not proof that equity financing raises returns.", className="text-muted d-block mt-2"),
     html.Hr(),
     html.H5("2 · The sector pecking order is the same everywhere"),
-    html.P(f'Each country\'s ranking of sectors by ROA matches the average of the other countries (correlation {SEC["agreement"]:+.2f}, positive in {SEC["agreement_positive"]} of {SEC["agreement_n"]} countries). '
-           f'If sector labels are shuffled inside each country the correlation falls to {SEC["placebo"]:+.2f}, so the agreement is real.', className="text-muted"),
-    dcc.Graph(figure=sector_fig(), config=CFG),
+    html.P(f'Each country\'s ranking of sectors by ROA matches the average of the other countries (match {sg(SEC["agreement"], 2)} on a −1 to +1 scale, positive in {SEC["agreement_positive"]} of {SEC["agreement_n"]} countries). '
+           f'If sector labels are shuffled inside each country the match falls to {sg(SEC["placebo"], 2)}, so the agreement is real.', className="text-muted"),
+    graph(sector_fig(), h=420),
     cap("Average ROA of each sector relative to its country's median company. Technology and consumer-defensive companies sit above the median in most countries; financials sit below it almost everywhere (financial ROA is structurally low)."),
     html.Hr(),
     html.H5("3 · EU companies earn less than non-EU companies, but this is a description, not an effect"),
-    dbc.Row([dbc.Col([dcc.Graph(figure=eu_fig(), config=CFG, style={"height": "260px"}), cap("Each dot is a country; dotted lines are group averages. ROA is adjusted for sector, company size and year.")], md=7),
-             dbc.Col([html.H2(f'{AB1["effect"]:+.1f} pp', className="big"), html.Small("EU minus non-EU, ROA", className="text-muted d-block mb-2"),
-                      html.P(f'The gap holds in every robustness check (same sign in {AB1["robust_share"]:.0%}). About {1 - EUC_CTRL["coef"] / AB1["effect"]:.0%} of it is the EU being more developed; {EUC_CTRL["coef"]:+.1f} pp remains when development is held fixed. '
+    dbc.Row([dbc.Col([graph(eu_fig(), h=280), cap("Each dot is a country; dotted lines are group averages. ROA is adjusted for sector, company size and year.")], md=7),
+             dbc.Col([html.H2(f'{sg(AB1["effect"])} pp', className="big"), html.Small("EU minus non-EU, ROA (points)", className="text-muted d-block mb-2"),
+                      html.P(f'The gap holds in every robustness check (same direction in {AB1["robust_share"]:.0%}). About {1 - EUC_CTRL["coef"] / AB1["effect"]:.0%} of it is the EU being more developed; {sg(EUC_CTRL["coef"])} pp remains when we compare countries at the same development level. '
                              'It is concentrated in smaller companies and close to zero for the largest ones.'),
                       html.Small("Countries cannot be randomly assigned to the EU, so the gap also reflects tax hubs, accounting rules and which companies are listed. Do not read it as the effect of membership.", className="text-muted")], md=5)]),
-    stats_toggle(f'p = {AB1["p_primary"]:.2g} (wild cluster bootstrap), country permutation p = {AB1["p_permutation"]:.2g}; 95% CI {AB1["ci_low"]:.2f} to {AB1["ci_high"]:.2f}; {AB1["clusters"]} countries, {AB1["n"]:,} firm-years. No ESEF replication is possible (EU filers only).'),
+    stats_toggle(f'p = {AB1["p_primary"]:.2g} (wild cluster bootstrap), country permutation p = {AB1["p_permutation"]:.2g}; 95% range {sg(AB1["ci_low"], 2)} to {sg(AB1["ci_high"], 2)}; {AB1["clusters"]} countries, {AB1["n"]:,} company-years. No ESEF replication is possible (EU filers only).'),
     html.Hr(),
-    html.Small("Listed companies, fiscal 2022–2025, 28 of 34 countries. Associations, not causation. Notebooks 2.1 and 3.1 hold the full analysis.", className="text-muted"),
+    html.Small(f"Listed companies, mainly {WINDOW}, {N_CO} of 34 countries (the other {len(country) - N_CO} have fewer than 30 listed companies). Associations, not causation. Notebooks 2.1 and 3.1 hold the full analysis.", className="text-muted"),
 ])
+
 
 # ---------------------------------------------------------------- method
 def pipeline():
     steps = [("Sources", "World Bank · IMF · Eurostat · Yahoo Finance · ESEF"), ("PostgreSQL", "staging → core → mart"), ("DuckDB", "one shared fact table"),
-             ("Analysis", "17 hypotheses · wild cluster bootstrap · BH correction"), ("Dashboard", "this app · Dash + Plotly")]
+             ("Analysis", "17 ideas tested · 15 counted in the correction"), ("Dashboard", "this app · Dash + Plotly")]
     out = []
     for i, (t, sub) in enumerate(steps):
         out.append(html.Div([html.B(t), html.Small(sub, className="text-muted d-block")], className="pipe-step"))
@@ -333,16 +532,22 @@ def pipeline():
     return html.Div(out, className="pipeline")
 
 
+def hyp_index():
+    order = sorted(HYP, key=HNUM)
+    rows = [html.Tr([html.Td(hlink(h)), html.Td(hlink(h, HYP[h]["title"], "plain-link")), html.Td(VERDICT_TEXT.get(HYP[h]["verdict"], HYP[h]["verdict"]))]) for h in order]
+    return dbc.Table([html.Thead(html.Tr([html.Th(""), html.Th("Question"), html.Th("Result")])), html.Tbody(rows)], size="sm", responsive=True)
+
+
 layout_about = html.Div([
     html.H5("About this project"),
     html.P(f"I'm {AUTHOR}. I wanted to know whether the economic and social conditions of a country show up in how its listed companies perform, and to answer it "
            "with a pipeline I could defend end to end rather than a one-off chart."),
-    html.H6("What I built"),
+    html.H6("What I built", className="subhead"),
     html.Ul([html.Li("A data pipeline that pulls 35 country indicators and 10,000+ company-years from five sources, lands them in PostgreSQL and exports a DuckDB analysis database."),
-             html.Li("A structured test of 17 hypotheses, with a wild cluster bootstrap (only 34 countries) and Benjamini–Hochberg correction for multiple testing."),
+             html.Li("A structured test of 17 ideas (hypotheses), with a wild cluster bootstrap (only 34 countries) and a correction for testing many ideas at once (Benjamini–Hochberg). 15 of the 17 are counted in the correction; the other 2 are robustness and data checks."),
              html.Li("A replication on a second, independent filing source (ESEF) and a leave-one-country-out check."),
              html.Li("This dashboard, which is built to be read by people who don't do statistics.")]),
-    html.H6("What I would highlight"),
+    html.H6("What I would highlight", className="subhead"),
     html.Ul([html.Li("Honest reporting: exploratory findings are labelled, null results are listed, caveats are on the page."),
              html.Li("Tools: Python, pandas, DuckDB, PostgreSQL, statsmodels, Plotly Dash, Docker.")]),
     html.P([html.A("GitHub profile", href=GITHUB, target="_blank"), " · ", html.A("project repository", href=REPO, target="_blank")]),
@@ -352,21 +557,19 @@ layout_method = html.Div([
     html.H6("How the pieces fit"), pipeline(), cap("From raw data to what you see on screen."),
     dbc.Accordion([
         dbc.AccordionItem(html.Ul([
-            html.Li("Sources: World Bank WDI and WGI, IMF DataMapper, Eurostat, Yahoo Finance (yfinance, unofficial; annual accounts and monthly prices), ESEF/xBRL filings (EU)."),
+            html.Li("Sources: World Bank (WDI and Worldwide Governance Indicators), IMF DataMapper, Eurostat, Yahoo Finance (an unofficial route to annual accounts and monthly prices), and official EU filings (ESEF)."),
             html.Li("Storage: PostgreSQL (staging / core / mart) exported to DuckDB; one shared company financial fact table."),
-            html.Li("Method: lagged (t-1) country features vs firm ROA, clustered by country; wild cluster bootstrap; Benjamini–Hochberg across the primary tests; ESEF replication."),
-            html.Li("Dropped: BGR, HRV, CYP, SVN, SVK (no firm data) and Malta (1 firm).")]), title="What was built"),
+            html.Li("Method: country conditions from the year before vs company ROA, with errors grouped by country; a re-sampling method (wild cluster bootstrap) that suits few countries; a correction for testing many ideas (Benjamini–Hochberg); replication on ESEF."),
+            html.Li("Countries dropped for lack of company data: Bulgaria, Croatia, Cyprus, Slovenia, Slovakia, and Malta (1 firm).")]), title="What was built"),
         dbc.AccordionItem(html.Ul([
-            html.Li("Small samples for EST, LVA, LTU, CZE, IRL (markets too small)."),
-            html.Li("Listed firms only; yfinance is unofficial and sector-skewed; ESEF has no sector."),
+            html.Li("Small samples for Estonia, Latvia, Lithuania, Czechia and Ireland (markets too small)."),
+            html.Li("Listed firms only; Yahoo is unofficial and skewed towards some sectors; ESEF has no sector."),
             html.Li("34 countries limit what can be separated: development, institutions and openness move together."),
             html.Li("H1, H2, H3, H5 and H13 were suggested by looking at the same data; treat as exploratory."),
-            html.Li("Company-level tab (notebooks 2.1, 3.1): the equity-ratio and sector results are associations between companies inside countries; both traits were checked on the same data before the notebook was finalised, so they sit outside the 15-test correction. Plain firm-level t-tests between country groups are badly over-confident (about 65% of random splits look significant), which is why the comparisons use country-level inference."),
+            html.Li("Company-level tab (notebooks 2.1, 3.1): the equity-ratio and sector results are associations between companies inside countries; both traits were checked on the same data before the notebook was finalised, so they sit outside the 15-test correction. Plain company-level t-tests between country groups are badly over-confident (about 65% of random splits look significant), which is why the comparisons use country-level inference."),
             html.Li("Yahoo and ESEF agree almost perfectly (H15), so ESEF replications are not independent for the companies in both sources."),
-            html.Li("Eurostat business statistics change definition between 2020 and 2021 (levels jump about 33%). The two tables are stored as separate series and every analysis uses only 2021 onward, so no result spans the break.")]), title="Caveats"),
-        dbc.AccordionItem([
-            dcc.Dropdown([{"label": f'{h}: {HYP[h]["title"]}' + ("" if h in HOLDS else "  (no clear evidence)"), "value": h} for h in HOLDS + REST], "H0", id="hyp", clearable=False, className="mb-3"),
-            html.Div(id="hyp-detail")], title="Every hypothesis in detail"),
+            html.Li(f"Company accounts cover {WINDOW} in practice (a few earlier and later filings exist but are too few to use on their own). Eurostat business statistics change definition between 2020 and 2021 (levels jump about 33%), so those tables are kept as separate series and used from 2021 onward only.")]), title="Caveats"),
+        dbc.AccordionItem([html.P("Click any question to read its page.", className="text-muted small"), hyp_index()], title="Every hypothesis in detail"),
     ], start_collapsed=False, always_open=True),
 ])
 
@@ -374,16 +577,26 @@ layout_method = html.Div([
 app = Dash(__name__, external_stylesheets=[dbc.themes.DARKLY, "https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap"], title="Country conditions and company performance")
 server = app.server
 app.layout = dbc.Container([
+    dcc.Location(id="url", refresh=False),
     html.Div([html.H1(["Country conditions and ", html.Span("company performance")]),
-              html.P(["34 countries, 10,000+ firm-years. ", html.A(f"by {AUTHOR}", href=GITHUB, target="_blank"), " · ", html.A("code on GitHub", href=REPO, target="_blank")],
+              html.P(["34 countries, 10,000+ company-years. ", html.A(f"by {AUTHOR}", href=GITHUB, target="_blank"), " · ", html.A("code on GitHub", href=REPO, target="_blank")],
                      className="text-muted mb-0")], className="hero"),
-    dbc.Tabs([dbc.Tab(layout_overview, label="Overview", tab_id="overview"), dbc.Tab(layout_explore, label="Explore", tab_id="explore"),
-              dbc.Tab(layout_countries, label="Countries", tab_id="countries"), dbc.Tab(layout_company, label="Company level", tab_id="company"),
-              dbc.Tab(layout_method, label="Method & caveats", tab_id="method"),
-              dbc.Tab(layout_about, label="About", tab_id="about")],
-             active_tab="overview", className="mb-3"),
-    html.Footer([f"Built by {AUTHOR} · ", html.A("GitHub", href=GITHUB, target="_blank"), " · ", html.A("source & data pipeline", href=REPO, target="_blank")]),
+    html.Div(dbc.Tabs([dbc.Tab(layout_overview, label="Overview", tab_id="overview"), dbc.Tab(layout_explore, label="Explore", tab_id="explore"),
+                       dbc.Tab(layout_countries, label="Countries", tab_id="countries"), dbc.Tab(layout_company, label="Company level", tab_id="company"),
+                       dbc.Tab(layout_method, label="Method & caveats", tab_id="method"),
+                       dbc.Tab(layout_about, label="About", tab_id="about")],
+                      active_tab="overview", className="mb-3"), id="main"),
+    html.Div(id="hyp-page"),
+    html.Footer(f"Built by {AUTHOR}."),
 ], fluid=True, className="pb-5", style={"maxWidth": "1400px"})
+
+
+@callback(Output("main", "style"), Output("hyp-page", "children"), Input("url", "pathname"))
+def route(path):
+    h = (path or "").removeprefix("/h/") if (path or "").startswith("/h/") else None
+    if h in HYP:
+        return {"display": "none"}, hyp_page(h)
+    return {}, None
 
 
 @callback(Output("x", "value"), Output("y", "value"), Input({"type": "preset", "index": ALL}, "n_clicks"), prevent_initial_call=True)
@@ -398,16 +611,19 @@ def apply_preset(_):
 @callback(Output("scatter", "figure"), Output("scatter-note", "children"), Input("x", "value"), Input("y", "value"), Input("colour", "value"), Input("sector", "value"))
 def scatter(x, y, colour, sector):
     d = country_stats(sector).dropna(subset=[x, y])
-    fig = px.scatter(d, x=x, y=y, color=colour, text="iso2", hover_name="name", size="firms", size_max=28, template=TPL, hover_data={"firms": True, "iso2": False})
+    d = with_labels(d, x, y, 12)
+    fig = px.scatter(d, x=x, y=y, color=colour, text="lab", hover_name="name", size="firms", size_max=28, template=TPL, hover_data={"firms": True, "iso2": False, "lab": False},
+                     color_discrete_sequence=DISTINCT)
     if len(d) > 3:
         b = np.polyfit(d[x], d[y], 1)
         xs = np.linspace(d[x].min(), d[x].max(), 20)
-        fig.add_trace(go.Scatter(x=xs, y=np.polyval(b, xs), mode="lines", line=dict(color=MUTED, dash="dash"), name="fit", showlegend=False))
+        fig.add_trace(go.Scatter(x=xs, y=np.polyval(b, xs), mode="lines", line=dict(color=MUTED, dash="dash"), name="fit", showlegend=False, hoverinfo="skip"))
     fig.update_traces(textposition="top center", textfont_color=TEXT, selector=dict(mode="markers+text"))
-    fig.update_layout(height=520, margin=dict(l=0, r=0, t=10, b=0), xaxis_title=pretty(INDICES.get(x, x)), yaxis_title=OUTCOMES.get(y, y),
-                      legend=dict(orientation="h", y=-0.18, title=None))
+    fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), xaxis_title=nice(x), yaxis_title=OUTCOMES.get(y, y), legend=dict(orientation="h", y=-0.2, title=None))
+    fig.update_xaxes(title_standoff=14)
+    fig.update_yaxes(title_standoff=14)
     rho = d[x].corr(d[y], method="spearman")
-    return fig, f"Spearman ρ = {rho:+.2f} across {len(d)} countries (descriptive; bubble size = number of firms)."
+    return fig, f"Match between the two (Spearman ρ, from −1 to +1) = {sg(rho, 2)} across {len(d)} countries. Descriptive only; bubble size = number of firms."
 
 
 @callback(Output("dl", "data"), Input("dl-btn", "n_clicks"), Input("sector", "value"), prevent_initial_call=True)
@@ -421,11 +637,11 @@ def download(n, sector):
 @callback(Output("map", "figure"), Input("map-metric", "value"), Input("map-scope", "value"))
 def draw_map(metric, scope):
     d = country.reset_index()
-    label = {**OUTCOMES, **INDICES}.get(metric, pretty(metric))
+    label = {**OUTCOMES, **INDICES}.get(metric, nice(metric))
     fig = px.choropleth(d, locations="iso3", color=metric, hover_name="name", color_continuous_scale=RED_SCALE, template=TPL, scope=scope, labels={metric: label})
-    fig.update_geos(bgcolor="rgba(0,0,0,0)", landcolor="#1a1a1e", showcountries=True, countrycolor=LINE, showframe=False, showcoastlines=False, showocean=True, oceancolor=BG,
+    fig.update_geos(bgcolor="rgba(0,0,0,0)", landcolor="#3a3a41", showcountries=True, countrycolor=BG, showframe=False, showcoastlines=False, showocean=True, oceancolor=BG,
                     **({"lonaxis_range": [-25, 45], "lataxis_range": [33, 72]} if scope == "europe" else {}))
-    fig.update_layout(height=520 if scope == "europe" else 440, margin=dict(l=0, r=0, t=0, b=0), coloraxis_colorbar=dict(title=label, thickness=12))
+    fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), coloraxis_colorbar=dict(title=dict(text=label, side="right"), thickness=12, len=0.8))
     return fig
 
 
@@ -434,16 +650,18 @@ def cap_countries(v):
     return (v or ["Germany"])[:3]
 
 
-@callback(Output("country-cards", "children"), Output("country-bars", "figure"), Output("country-roa", "figure"), Input("countries", "value"), Input("theme", "value"),
-          Input("c-sector", "value"), Input("years", "value"))
+@callback(Output("country-cards", "children"), Output("country-bars", "figure"), Output("country-bars", "style"), Output("country-roa", "figure"),
+          Input("countries", "value"), Input("theme", "value"), Input("c-sector", "value"), Input("years", "value"))
 def country_view(names, theme, sector, years):
     names = (names or ["Germany"])[:3]
     cs = country_stats(sector, tuple(years))
     names = [n for n in names if n in set(cs.name)] or names[:1]
     rows = [(cs if n in set(cs.name) else country)[(cs if n in set(cs.name) else country).name == n].iloc[0] for n in names]
-    cards = dbc.Row([dbc.Col([html.H5(r["name"], className="mb-2"), dbc.Row([
-        dbc.Col(xs=6, md=True, children=kpi("Firms", f'{int(r.firms)}', "small sample" if r.small_firm_sample else "")), dbc.Col(xs=6, md=True, children=kpi("Mean ROA", f"{r.roa:.1f} pp")),
-        dbc.Col(xs=6, md=True, children=kpi("Development", f"{r.dev_index:+.2f} SD")), dbc.Col(xs=6, md=True, children=kpi("Institutions", f"{r.inst_index:+.2f} SD")), dbc.Col(xs=6, md=True, children=kpi("Loss-making", f"{r.loss:.0f}%"))],
+    cmap = dict(zip(names, CC))
+    cards = dbc.Row([dbc.Col([html.H5(r["name"], className="mb-2", style={"borderLeft": f"4px solid {cmap[r['name']]}", "paddingLeft": ".5rem"}), dbc.Row([
+        dbc.Col(xs=6, md=6, lg=True, children=kpi("Firms", f'{int(r.firms)}', "small sample" if r.small_firm_sample else "")), dbc.Col(xs=6, md=6, lg=True, children=kpi("Mean ROA", f"{r.roa:.1f} pp")),
+        dbc.Col(xs=6, md=6, lg=True, children=kpi("Development", f"{sg(r.dev_index, 2)} SD")), dbc.Col(xs=6, md=6, lg=True, children=kpi("Institutions", f"{sg(r.inst_index, 2)} SD")),
+        dbc.Col(xs=6, md=6, lg=True, children=kpi("Loss-making", f"{r.loss:.0f}%"))],
         className="g-2")], md=12 // len(names)) for r in rows], className="g-3 mb-3")
     cols = [f for f in FEATS if theme == "all" or X["group"][f] == theme]
     iso = [r.name for r in rows]
@@ -451,40 +669,27 @@ def country_view(names, theme, sector, years):
     z.columns = names
     z = z.sort_values(names[0])
     bars = px.bar(z.reset_index().melt(id_vars="index", var_name="country", value_name="sd"), x="sd", y="index", color="country", orientation="h", barmode="group", template=TPL,
-                  labels={"sd": "standard deviations from the 34-country average", "index": ""}, color_discrete_sequence=[REDHI, "#d9d4cf", AMBER])
-    bars.update_layout(height=max(380, 22 * len(z) * len(names)) + 40, margin=dict(l=0, r=0, t=10, b=50), yaxis_title=None)
-    bars.update_yaxes(tickvals=list(z.index), ticktext=[pretty(i) for i in z.index])
+                  labels={"sd": "SD from the 34-country average", "index": ""}, color_discrete_map=cmap, category_orders={"country": names})
+    h = max(380, 22 * len(z) * len(names)) + 90
+    bars.update_layout(height=h, margin=dict(l=0, r=0, t=10, b=90), yaxis_title=None, legend=dict(orientation="h", y=-0.1 if h > 600 else -0.2, title=None))
+    bars.update_xaxes(title_standoff=14)
+    bars.update_yaxes(tickvals=list(z.index), ticktext=[nice(i) for i in z.index])
     f = firm_slice(sector, tuple(years))
     f = f[f.iso3.isin(iso)].groupby(["iso3", "fiscal_year"]).roa_pp.agg(["median", "count"]).reset_index()
     f["country"] = f.iso3.map(dict(zip(iso, names)))
-    roa = px.line(f, x="fiscal_year", y="median", color="country", markers=True, hover_data=["count"], template=TPL, labels={"median": "median ROA (pp)", "fiscal_year": ""},
-                  color_discrete_sequence=[REDHI, "#d9d4cf", AMBER])
-    roa.update_layout(height=300, margin=dict(l=0, r=0, t=10, b=0))
+    roa = px.line(f, x="fiscal_year", y="median", color="country", markers=True, hover_data=["count"], template=TPL, labels={"median": "median ROA (%)", "fiscal_year": ""},
+                  color_discrete_map=cmap, category_orders={"country": names})
+    roa.update_layout(margin=dict(l=10, r=10, t=10, b=10), legend=dict(title=None))
     roa.update_xaxes(dtick=1)
-    bars.update_layout(legend=dict(orientation="h", y=-0.08, title=None))
-    return cards, bars, roa
+    roa.update_yaxes(title_standoff=14)
+    return cards, bars, {"height": f"{h}px"}, roa
 
 
-@callback(Output("w-forest", "figure"), Output("w-note", "children"), Input("w-trait", "value"))
+@callback(Output("w-title", "children"), Output("w-desc", "children"), Output("w-forest", "figure"), Output("w-note", "children"), Input("w-trait", "value"))
 def w_view(h):
     s = CO["summary"][h]
     k = round(s["same_sign_share"] * s["k"])
-    return forest_fig(h), f'{k} of {s["k"]} countries have the same direction as the pooled estimate ({s["same_sign_share"]:.0%}).'
-
-
-@callback(Output("hyp-detail", "children"), Input("hyp", "value"))
-def hyp_detail(h):
-    r = HYP[h]
-    rep = ("no replication" if r.get("replication_coef") is None or pd.isna(r.get("replication_coef"))
-           else f'ESEF: {r["replication_coef"]:.2f} (p = {r["replication_p"]:.3g}, {"same" if r["replication_same_sign"] else "opposite"} sign)')
-    return html.Div([
-        html.H4([r["title"], " ", dbc.Badge(r["verdict"], style={"backgroundColor": VERDICT_COLOR.get(r["verdict"], "#999")})]),
-        html.P(r["statement"], className="lead"),
-        html.P(f'Effect: {r["effect"]:.3f} {r["effect_unit"]}  (95% CI {ci(r)}); p = {r["p_primary"]:.3g} ({r["p_method"]}); '
-               f'n = {r["n"]:,}, {r["clusters"]} countries. Robust in {r["robust_share"]:.0%} of variants. {rep}.'),
-        html.Ul([html.Li(n) for n in r["notes"]]),
-        html.Small(f'Details in notebook {r["notebook"]}' + ("  ·  exploratory (suggested by scans of the same data)" if h in EXPLORATORY else ""), className="text-muted"),
-    ])
+    return W_TEXT[h][0], W_TEXT[h][1], forest_fig(h), f'{k} of {s["k"]} countries have the same direction as the pooled estimate ({s["same_sign_share"]:.0%}).'
 
 
 if __name__ == "__main__":

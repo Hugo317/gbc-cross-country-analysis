@@ -67,3 +67,20 @@ footer { border-top: 1px solid var(--line); margin-top: 2rem; padding-top: 1rem;
 .dash-dropdown-action-button { color: var(--red-hi) !important; font-size: .8rem; background: transparent !important; }
 .dash-dropdown-action-button:hover { color: #ff6b6e !important; text-decoration: underline; }
 .dash-dropdown-actions { padding: 4px 8px; }
+/* ---- readability pass ---- */
+.nav-tabs { flex-wrap: wrap; }
+.badge.bg-amber { background: #e9a23b !important; color: #1a1205 !important; }
+.hlink, .more-link { color: var(--red-hi); font-weight: 600; text-decoration: none; }
+.hlink:hover, .more-link:hover, .plain-link:hover { color: #ff6b6e; text-decoration: underline; }
+.plain-link { color: var(--text); text-decoration: none; }
+.kpi h3 { font-size: 1.25rem; white-space: nowrap; }
+.kpi small { font-size: .74rem; overflow-wrap: normal; hyphens: none; }
+h6.subhead { color: var(--red-hi); text-transform: uppercase; letter-spacing: .06em; font-size: .8rem; margin-top: 1.25rem; }
+dl.glossary dt { color: var(--text); font-weight: 600; margin-top: .6rem; } dl.glossary dd { color: var(--muted); margin-bottom: 0; }
+.form-check-input:checked { background-color: var(--red-hi); border-color: var(--red-hi); }
+.form-check-input:focus { box-shadow: 0 0 0 .2rem rgba(229,56,59,.25); border-color: var(--red-hi); }
+.dash-options-list-option-checkbox, input[type=checkbox], input[type=radio] { accent-color: var(--red-hi) !important; }
+.dash-dropdown-actions { display: none !important; }
+.modebar-btn path { fill: #c9c6c2 !important; } .modebar-btn:hover path { fill: #fff !important; }
+.accordion-body { overflow: visible; }
+footer { text-align: left; }
