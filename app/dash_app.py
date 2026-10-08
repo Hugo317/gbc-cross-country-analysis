@@ -61,7 +61,7 @@ LABELS = {"gdp_per_capita_ppp": "GDP per person (PPP)", "gdp_usd": "Size of the 
 LOGS = {"population", "gdp_usd", "patents_residents"}                   # stored as natural logs in the extract
 nice = lambda f: LABELS.get(f, pretty(f).capitalize())
 INDICES = {"dev_index": "Development index", "inst_index": "Institutions index"}
-OUTCOMES = {"roa": "Return on assets, ROA (% points)", "margin": "Net profit margin", "loss": "Loss-making company-years (%)"}
+OUTCOMES = {"roa": "Return on assets, ROA (% points)", "margin": "Net profit margin (%)", "loss": "Loss-making company-years (%)"}
 FEATURE_OPTIONS = [{"label": nice(f), "value": f} for f in FEATS] + [{"label": v, "value": k} for k, v in INDICES.items()]
 OUTCOME_OPTIONS = [{"label": v, "value": k} for k, v in OUTCOMES.items()]
 MAP_OPTIONS = OUTCOME_OPTIONS + [{"label": v, "value": k} for k, v in INDICES.items()] + [{"label": nice(f), "value": f} for f in FEATS]
@@ -140,6 +140,7 @@ def country_stats(sector="all", years=None):
     """Country table whose firm outcomes are recomputed for a sector and/or fiscal-year window (thin countries drop out)."""
     filtered = sector not in (None, "all") or years is not None
     a = firm_slice(sector, years).groupby("iso3").agg(firms=("company_id", "nunique"), roa=("roa_pp", "mean"), margin=("net_margin_w", "mean"), loss=("loss_pp", "mean"))
+    a["margin"] = a["margin"] * 100
     a = a[a.firms >= (MIN_SECTOR_FIRMS if filtered else MIN_FIRMS)]
     return country.drop(columns=["firms", "roa", "margin", "loss"]).join(a, how="inner")
 
@@ -288,6 +289,7 @@ def evidence_fig():
     ids = [h for h in HOLDS if h not in NOT_A_TEST]
     d = pd.DataFrame({"h": ids, "label": [f'{h} · {SHORT.get(h, HYP[h]["title"][:24])}' for h in ids], "strength": [-np.log10(max(HYP[h]["p_primary"], 1e-9)) for h in ids],
                       "verdict": [HYP[h]["verdict"] for h in ids]})
+    d = d.sort_values("strength", ascending=False)
     fig = px.bar(d, x="strength", y="label", orientation="h", color="verdict", color_discrete_map=VERDICT_COLOR, template=TPL,
                  labels={"strength": "evidence strength", "label": ""})
     fig.add_vline(x=-np.log10(0.05), line_dash="dot", line_color=MUTED)
@@ -298,10 +300,14 @@ def evidence_fig():
 
 
 def rest_table():
-    head = html.Thead(html.Tr([html.Th(x) for x in ["", "Question", "Result", "What was measured", "Effect", "p"]]))
+    head = html.Thead(html.Tr([html.Th(x) for x in ["", "Question", "Result", "Effect", "p"]]))
     unit = plain_unit
-    rows = [html.Tr([html.Td(hlink(h)), html.Td(HYP[h]["title"]), html.Td(status_badge(h)[0]), html.Td(BIGOVER[h][1] if h in BIGOVER else unit(HYP[h]["effect_unit"])),
-                     html.Td(BIGOVER[h][0](HYP[h]) if h in BIGOVER else sg(HYP[h]["effect"], 2)),
+    def eff(h):
+        r = HYP[h]
+        if h in BIGOVER:
+            return BIGOVER[h][0](r)
+        return f'ρ = {sg(r["effect"], 2)}' if r["effect_unit"].startswith("Spearman") else f'{sg(r["effect"], 2)} pp'
+    rows = [html.Tr([html.Td(hlink(h)), html.Td(HYP[h]["title"]), html.Td(status_badge(h)[0]), html.Td(eff(h), title=BIGOVER[h][1] if h in BIGOVER else unit(HYP[h]["effect_unit"])),
                      html.Td("≥ 0.99" if HYP[h]["p_primary"] >= 0.99 else f'{HYP[h]["p_primary"]:.2f}' if HYP[h]["p_primary"] >= 0.01 else f'{HYP[h]["p_primary"]:.1g}')]) for h in REST]
     return html.Div([dbc.Table([head, html.Tbody(rows)], size="sm", responsive=True, className="small text-muted"),
                      html.Small("p: how easily chance alone could produce the result (small = unlikely to be chance). A large p such as ≥ 0.99 means chance explains it easily; for H7 it tests whether predictions improved, and they did not.", className="text-muted")])
@@ -395,6 +401,10 @@ def ci_h(h, r):
     return f'{nf(h, r["ci_low"])} to {nf(h, r["ci_high"])}' if h == "H3" else ci(r)
 
 
+def fmtp(p):
+    return "< 0.001" if p < 0.001 else f"= {p:.3g}"
+
+
 def sign(x):
     return (x > 0) - (x < 0)
 
@@ -405,7 +415,7 @@ def plain_text(h, r):
     e, lo, hi, ex = r["effect"], r["ci_low"], r["ci_high"], r.get("expected_sign", 0)
     t = "The data do not back this idea up. "
     if lo is not None and hi is not None and not pd.isna(lo) and lo <= 0 <= hi:
-        t += f"The best estimate is {nf(h, e)}, but the plausible range ({nf(h, lo)} to {nf(h, hi)}) includes zero, so we cannot tell it apart from no effect. " + ("It leans the opposite way to what the idea predicts. " if ex and sign(e) != ex else "")
+        t += f"The best estimate is {nf(h, e)}, but the plausible range ({nf(h, lo)} to {nf(h, hi)}) includes zero, so we cannot tell it apart from no effect. " + ("It leans the opposite way to what the idea predicts. " if ex and sign(e) != ex and abs(e) > 0.1 * (hi - lo) else "")
     elif ex and sign(e) != ex:
         t += f"The estimate ({sg(e, 2)}) even points the opposite way to what we expected. "
     else:
@@ -430,7 +440,10 @@ def hyp_page(h):
         tags.append(dbc.Badge("confirmed on 2nd data source", className="me-2 bg-ash"))
     own_unit = not r["effect_unit"].startswith("Spearman")
     rep_txt = None
-    if own_unit and rep is not None and not pd.isna(rep):
+    later = [n for n in r["notes"] if n.startswith("Replication on 2023")]
+    if own_unit and rep is not None and not pd.isna(rep) and later:
+        rep_txt = f"A check on the later years only (2023–2024, the same firms, so not independent) gives {sg(rep, 2)}."
+    elif own_unit and rep is not None and not pd.isna(rep):
         rep_txt = f'The second data source (official ESEF filings) gives {nf(h, rep)}' + \
                   ((", pointing the same way." if sign(rep) == sign(r["effect"]) else ", pointing the other way.") if r["verdict"] != "not supported"
                    else (", with the same sign." if sign(rep) == sign(r["effect"]) else ", with the opposite sign.")) + \
@@ -499,10 +512,10 @@ def hyp_page(h):
         cap("If the line crosses the dotted 'no effect' mark, the true effect could be zero.") if fig is not None and fig.layout.annotations else html.Div(),
         *extra,
         html.H5("Keep in mind", className="mt-4"), html.Ul([html.Li(c) for c in caveats]),
-        dbc.Accordion([dbc.AccordionItem([html.P(f'Estimate {fm(r["effect"], 3)} {r["effect_unit"]}; 95% CI {ci(r)}; p = {r["p_primary"]:.3g} ({r["p_method"]}); {sample_txt(r)}.' +
+        dbc.Accordion([dbc.AccordionItem([html.P(f'Estimate {fm(r["effect"], 3)} {r["effect_unit"]}; 95% CI {ci(r)}; {"adjusted p (q)" if h == "H16" else "p"} {fmtp(r["p_primary"])} ({r["p_method"]}); {sample_txt(r)}.' +
                                                  ("" if h in NOT_A_TEST or h not in Q.index else f' q = {Q[h]:.3f} (Benjamini–Hochberg across 15 tests).'), className="small"),
                                           html.Ul([html.Li(fix_minus(n)) for n in r["notes"]], className="small"),
-                                          html.P('In these notes "opposite direction" means opposite to the sign we expected in advance.', className="small text-muted") if r["verdict"] == "contradicted" else html.Div(),
+                                          html.P('In these notes, "same direction" and "opposite direction" refer to the sign we expected in advance, not to the main estimate.', className="small text-muted") if any("direction" in n for n in r["notes"]) else html.Div(),
                                           html.P("The by-size numbers in these notes come from a slightly different model than the bar chart on this page (about −2.0 vs −1.7 for small firms); the pattern is the same.", className="small text-muted") if h == "H13" else html.Div()], title="Technical details")], start_collapsed=True, className="mt-3"),
         glossary(),
         html.Small(f'Full analysis in notebook {r["notebook"]}', className="text-muted d-block mt-3"),
@@ -527,7 +540,7 @@ layout_explore = html.Div([
     dbc.Row([dbc.Col([dbc.Label("Show"), dcc.Dropdown(MAP_OPTIONS, "roa", id="map-metric", clearable=False)], md=6),
              dbc.Col([dbc.Label("Area"), dbc.RadioItems(options=[{"label": "Europe", "value": "europe"}, {"label": "World", "value": "world"}], value="europe", id="map-scope", inline=True)], md=6)],
             className="mb-2"),
-    graph(id="map", h=520), cap("Darker = lower, brighter red = higher. Grey countries are not part of this study. The map follows the Sector filter above."),
+    graph(id="map", h=520), cap("Darker = lower, brighter red = higher. Grey = not in this study, or (when a sector is chosen) fewer than 5 firms in that sector. The map follows the Sector filter above."),
     html.Hr(),
     html.H5("Who carries the effect? Small firms (all sectors)"),
     html.P(["Small companies carry the main pattern; the largest third of firms show almost none. ", hlink("H13", "Read the full finding →", "more-link")]),
@@ -572,7 +585,8 @@ def forest_fig(h):
     u, s = W_UNIT[h], CO["summary"][h]
     d = WS[WS.trait == h].assign(c=lambda d: d.coef * u, lo=lambda d: (d.coef - 1.96 * d.se) * u, hi=lambda d: (d.coef + 1.96 * d.se) * u).sort_values("c")
     fig = px.scatter(d, x="c", y="country", template=TPL, color_discrete_sequence=[REDHI], error_x=d.hi - d.c, error_x_minus=d.c - d.lo,
-                     labels={"c": W_LABEL[h][1], "country": ""}, hover_data={"n": True, "firms": True, "c": ":.2f", "country": False})
+                     labels={"c": W_LABEL[h][1], "country": ""}, custom_data=["country", "n", "firms"])
+    fig.update_traces(hovertemplate="<b>%{customdata[0]}</b><br>Estimate: %{x:.2f}<br>Companies: %{customdata[2]}<br>Company-years: %{customdata[1]}<extra></extra>")
     fig.add_vline(x=0, line_color=MUTED)
     fig.add_vline(x=s["mean"] * u, line_dash="dot", line_color=AMBER)
     fig.add_annotation(x=s["mean"] * u, y=1.0, yref="paper", text=f'pooled {sg(s["mean"] * u, 2)}', showarrow=False, yshift=12, font=dict(color=AMBER, size=11), xanchor="left")
@@ -585,8 +599,9 @@ def forest_fig(h):
 def sector_fig():
     d = pd.DataFrame({"sector": list(SEC["mean"]), "premium": list(SEC["mean"].values()), "positive": [SEC["share_positive"][k] for k in SEC["mean"]],
                       "countries": [SEC["countries"][k] for k in SEC["mean"]]}).sort_values("premium")
-    fig = px.bar(d, x="premium", y="sector", orientation="h", template=TPL, color_discrete_sequence=[REDHI], hover_data={"positive": ":.0%", "countries": True, "premium": ":.2f"},
+    fig = px.bar(d, x="premium", y="sector", orientation="h", template=TPL, color_discrete_sequence=[REDHI], custom_data=["positive", "countries"],
                  labels={"premium": "ROA vs country median (points)", "sector": ""})
+    fig.update_traces(hovertemplate="<b>%{y}</b><br>ROA vs country median: %{x:.2f} points<br>Above the median in %{customdata[0]:.0%} of %{customdata[1]} countries<extra></extra>")
     fig.update_layout(margin=dict(l=0, r=10, t=10, b=60))
     fig.update_xaxes(title_standoff=14)
     return fig
@@ -630,7 +645,7 @@ layout_company = html.Div([
     cap("Average ROA of each sector relative to its country's median company. Technology and consumer-defensive companies sit above the median in most countries; financials sit below it almost everywhere (financial ROA is structurally low)."),
     html.Hr(),
     html.H5("3 · EU companies earn less than non-EU companies, but this is a description, not an effect"),
-    dbc.Row([dbc.Col([graph(eu_fig(), h=280), cap("Each dot is a country; dotted lines are group averages. ROA is adjusted for sector, company size and year. The headline gap compares companies directly, so it differs a little from the gap between these country averages.")], md=7),
+    dbc.Row([dbc.Col([graph(eu_fig(), h=280), cap("Each dot is a country (all 34 here; the charts above use the 28 with at least 30 listed companies); dotted lines are group averages. ROA is adjusted for sector, company size and year. The headline gap compares companies directly, so it differs a little from the gap between these country averages.")], md=7),
              dbc.Col([html.H2(f'{sg(AB1["effect"])} pp', className="big"), html.Small("EU minus non-EU, ROA (points)", className="text-muted d-block mb-2"),
                       html.P(f'The gap holds in every robustness check (same direction in {AB1["robust_share"]:.0%}). About {1 - EUC_CTRL["coef"] / AB1["effect"]:.0%} of it is the EU being more developed; {sg(EUC_CTRL["coef"])} pp remains when we compare countries at the same development level. '
                              'It is concentrated in smaller companies and close to zero for the largest ones.'),
@@ -719,6 +734,8 @@ def route(path):
     h = (path or "").removeprefix("/h/") if (path or "").startswith("/h/") else None
     if h in HYP:
         return {"display": "none"}, hyp_page(h)
+    if (path or "").startswith("/h/"):
+        return {"display": "none"}, html.Div([dcc.Link("← Back to all findings", href="/", className="more-link"), html.H4("Finding not found", className="mt-3"), html.P("There is no page for that finding.", className="text-muted")])
     return {}, None
 
 
@@ -737,13 +754,14 @@ def scatter(x, y, colour, sector):
     d = with_labels(d, x, y, 9).assign(eu_flag=lambda d: np.where(d.is_eu, "EU", "Non-EU"))
     colour = "eu_flag" if colour == "eu_group" else colour
     d = d.assign(_x=np.exp(d[x]) if x in LOGS else d[x])
-    fig = px.scatter(d, x="_x", y=y, color=colour, text="lab", color_discrete_map={"EU": REDHI, "Non-EU": "#4cc9f0"}, hover_name="name", size="firms", size_max=18, template=TPL, hover_data={"firms": True, "iso2": False, "lab": False},
+    fig = px.scatter(d, x="_x", y=y, color=colour, text="lab", color_discrete_map={"EU": REDHI, "Non-EU": "#4cc9f0"}, custom_data=["name", "firms"], size="firms", size_max=18, template=TPL,
                      color_discrete_sequence=DISTINCT)
     if len(d) > 3:
         b = np.polyfit(d[x], d[y], 1)
         xs = np.linspace(d[x].min(), d[x].max(), 20)
         fig.add_trace(go.Scatter(x=np.exp(xs) if x in LOGS else xs, y=np.polyval(b, xs), mode="lines", line=dict(color=MUTED, dash="dash"), name="fit", showlegend=False, hoverinfo="skip"))
     fig.update_traces(textposition="top center", textfont_color=TEXT, selector=dict(mode="markers+text"))
+    fig.update_traces(hovertemplate="<b>%{customdata[0]}</b><br>" + nice(x) + ": %{x:,.3~s}<br>" + OUTCOMES.get(y, y) + ": %{y:,.2f}<br>Firms: %{customdata[1]}<extra></extra>", selector=dict(mode="markers+text"))
     fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), xaxis_title=nice(x) + (" (log scale)" if x in LOGS else ""), yaxis_title=OUTCOMES.get(y, y), legend=dict(orientation="h", y=-0.2, title=None))
     fig.update_xaxes(title_standoff=14, type="log" if x in LOGS else "linear")
     if x in LOGS:
@@ -768,12 +786,13 @@ def draw_map(metric, scope, sector):
     label = {**OUTCOMES, **INDICES}.get(metric, nice(metric))
     d = d.dropna(subset=[metric])
     fig = px.choropleth(d, locations="iso3", color=metric, hover_name="name", color_continuous_scale=MAP_SCALE, template=TPL, labels={metric: label})
-    geo = dict(bgcolor="rgba(0,0,0,0)", showland=True, landcolor="#4a4a52", showcountries=True, countrycolor=BG, showframe=False, showcoastlines=False, showocean=True, oceancolor=BG)
+    geo = dict(bgcolor="rgba(0,0,0,0)", showland=True, landcolor="#4a4a52", showcountries=True, countrycolor=BG, showframe=True, framecolor=LINE, framewidth=1, showcoastlines=False, showocean=True, oceancolor=BG)
     if scope == "europe":
         geo.update(projection_type="mercator", lonaxis_range=[-25, 48], lataxis_range=[33, 71])
     else:
         geo.update(projection_type="robinson", lonaxis_range=[-170, 180], lataxis_range=[-56, 80])
     fig.update_geos(**geo)
+    fig.update_traces(hovertemplate="<b>%{hovertext}</b><br>" + label + ": %{z:,.2f}<extra></extra>")
     fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), coloraxis_colorbar=dict(title=dict(text=label, side="right"), thickness=12, len=0.8))
     return fig
 
