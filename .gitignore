@@ -7,3 +7,6 @@ data/profile/
 .env
 .DS_Store
 .playwright-mcp/
+
+# critic/QA screenshots dropped in the repo root
+/*.png

@@ -87,3 +87,5 @@ footer { text-align: left; }
 .big.mute { color: var(--muted) !important; }
 input.dash-dropdown-focus-target { position: absolute !important; width: 1px !important; height: 1px !important; opacity: 0; overflow: hidden; }
 html, body { overflow-x: hidden; }
+.form-check-input:not(:checked) { background-color: transparent; border-color: var(--muted); }
+.form-check-input:not(:checked) { background-color: transparent; border-color: var(--muted); }
