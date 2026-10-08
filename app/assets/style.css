@@ -56,3 +56,14 @@ footer { border-top: 1px solid var(--line); margin-top: 2rem; padding-top: 1rem;
 .dash-slider-thumb { background: var(--red-hi) !important; border-color: var(--text) !important; }
 .dash-slider-mark, .dash-slider-mark-label { color: var(--muted) !important; }
 .dash-slider-input, .dash-range-slider-input, .dash-slider-container input { background: var(--card2) !important; color: var(--text) !important; border: 1px solid var(--line) !important; }
+/* dropdown panel: search stays on top, only the options list scrolls (otherwise options slide behind the sticky search) */
+.dash-dropdown-content { display: flex !important; flex-direction: column; overflow: hidden !important; max-height: 320px !important; }
+.dash-dropdown-search-container { position: static !important; flex: none; background: var(--card2) !important; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.dash-dropdown-search-container svg { color: var(--muted) !important; }
+.dash-dropdown-search { background: var(--bg, #0b0b0d) !important; color: var(--text) !important; border: 1px solid var(--line) !important; border-radius: 6px; outline: none; }
+.dash-dropdown-search:focus { border-color: var(--red-hi) !important; }
+.dash-dropdown-options { flex: 1 1 auto; min-height: 0; overflow-y: auto !important; }
+.dash-dropdown-search-container, .dash-dropdown-search-container:focus-within { outline: none !important; border: 0 !important; border-bottom: 1px solid var(--line) !important; box-shadow: none !important; }
+.dash-dropdown-action-button { color: var(--red-hi) !important; font-size: .8rem; background: transparent !important; }
+.dash-dropdown-action-button:hover { color: #ff6b6e !important; text-decoration: underline; }
+.dash-dropdown-actions { padding: 4px 8px; }
